@@ -1,0 +1,42 @@
+.profile-card {
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  width: 300px;
+  text-align: center;
+}
+
+.profile-content p {
+  font-size: 16px;
+  color: #333;
+}
+
+.bookings-button, .link-change-password, .logout-button {
+  display: block;
+  margin: 10px auto;
+  padding: 10px;
+  text-decoration: none;
+  border-radius: 5px;
+  text-align: center;
+}
+
+.bookings-button {
+  background-color: #007bff;
+  color: white;
+}
+
+.link-change-password {
+  background-color: #f0ad4e;
+  color: white;
+}
+
+.logout-button {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+.logout-button:hover {
+  background-color: #c82333;
+}
