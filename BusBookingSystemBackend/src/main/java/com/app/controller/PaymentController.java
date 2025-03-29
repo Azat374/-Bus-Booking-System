@@ -1,9 +1,15 @@
 package com.app.controller;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+
+import com.stripe.Stripe;
+import com.stripe.exception.StripeException;
+import com.stripe.model.checkout.Session;
+import com.stripe.param.checkout.SessionCreateParams;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -41,6 +47,8 @@ public class PaymentController {
 	private String RAZORPAY_KEY_ID;
 	@Value("${razorpay.key.secret}")
 	private String RAZORPAY_KEY_SECRET;
+	@Value("${stripe.api.key}")
+	private String stripeApiKey;
 
 	@PostMapping("/razorpay")
 	public ResponseEntity<?> createOrder(@RequestBody OrderRequest request) {
@@ -101,7 +109,48 @@ public class PaymentController {
 					.body(Map.of("error", "Payment verification failed"));
 		}
 	}
+	@PostMapping("/stripe")
+	public ResponseEntity<?> createStripeCheckoutSession(@RequestBody OrderRequest orderRequest) {
+		try {
+			// Инициализируем Stripe
+			Stripe.apiKey = stripeApiKey;
 
+			// Создаём параметры для сессии
+			SessionCreateParams params = SessionCreateParams.builder()
+					.addPaymentMethodType(SessionCreateParams.PaymentMethodType.CARD)
+					.setMode(SessionCreateParams.Mode.PAYMENT)
+					.setSuccessUrl("https://yourdomain.com/checkout/success?session_id={CHECKOUT_SESSION_ID}")
+					.setCancelUrl("https://yourdomain.com/checkout/cancel")
+					.addLineItem(
+							SessionCreateParams.LineItem.builder()
+									.setQuantity(1L)
+									.setPriceData(
+											SessionCreateParams.LineItem.PriceData.builder()
+													.setCurrency("kzt")
+													// Преобразуем сумму в центы
+													.setUnitAmount((long) orderRequest.getAmount() * 0)
+													.setProductData(
+															SessionCreateParams.LineItem.PriceData.ProductData.builder()
+																	.setName("Dimash Bus Booking")
+																	.build()
+													)
+													.build()
+									)
+									.build()
+					)
+					.build();
+
+			// Создаём Stripe Checkout Session
+			Session session = Session.create(params);
+
+			// Возвращаем URL для перехода на страницу оплаты
+			return ResponseEntity.ok(Collections.singletonMap("checkoutUrl", session.getUrl()));
+		} catch (StripeException e) {
+			e.printStackTrace();
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+					.body(e.getMessage());
+		}
+	}
 //	@PostMapping("/refund")
 //    public ResponseEntity<?> initiateRefund(@RequestBody RefundRequest request) {
 //        try {

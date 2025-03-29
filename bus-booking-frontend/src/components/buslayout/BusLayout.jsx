@@ -196,7 +196,7 @@ export default function BusLayout() {
 
       const options = {
         key: "rzp_test_bTDnw950m7Mzb4",
-        currency: data.currency,
+        currency: KZT,
         amount: data.amount,
         name: "Dimash Bus",
         description: "Dimash Bus Booking",
