@@ -117,7 +117,7 @@ public class BusSeviceImpl implements BusService {
 	    // Prepare and return the list of SendBusDto objects
 	    return filteredBuses.stream()
 	            .map(bus -> {
-	                int cost = (int) route.getDistance() * 1000;
+	                int cost = (int) route.getDistance() * 2;
 	                double duration = (double) route.getDistance() * 1.5;
 	                String durationString = duration >= 60 ? (duration / 60) + "hr" : duration + "min";
 	                String busNo=bus.getBusNo();

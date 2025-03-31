@@ -119,8 +119,8 @@ public class PaymentController {
 			SessionCreateParams params = SessionCreateParams.builder()
 					.addPaymentMethodType(SessionCreateParams.PaymentMethodType.CARD)
 					.setMode(SessionCreateParams.Mode.PAYMENT)
-					.setSuccessUrl("https://yourdomain.com/checkout/success?session_id={CHECKOUT_SESSION_ID}")
-					.setCancelUrl("https://yourdomain.com/checkout/cancel")
+					.setSuccessUrl("https://buy.stripe.com/test_14kdTpc1saeB0a43cc/checkout/success?session_id={CHECKOUT_SESSION_ID}")
+					.setCancelUrl("https://buy.stripe.com/test_14kdTpc1saeB0a43cc/checkout/cancel")
 					.addLineItem(
 							SessionCreateParams.LineItem.builder()
 									.setQuantity(1L)
