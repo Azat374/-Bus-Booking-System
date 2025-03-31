@@ -25,8 +25,7 @@ const EditStationPopup = ({ show, handleClose, stationId }) => {
   const handleUpdateStation = async () => {
     try {
       const jwtToken = localStorage.getItem("jwtToken");
-      const response = await axiosInst.put(
-        `station/updatestation/${stationId}`,
+      const response = await axiosInst.put(`station/updatestation/${stationId}`,
         { station_name: stationName },
         {
           headers: {

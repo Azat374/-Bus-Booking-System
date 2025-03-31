@@ -40,7 +40,9 @@ const WidgetsDropdown = () => {
           },
         });
         setBookings(response.data);
-        
+        console.log(Array.isArray(bookings)); // должен быть true
+        console.log(typeof bookings);         // должен быть "object"
+
       } catch (error) {
         console.error("Error fetching bookings:", error);
       }

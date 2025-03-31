@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import "./MyBookings.css";
 import { axiosInst } from '../../service/axiosInstance';
-import jsPDF from 'jspdf';
 import { ToastContainer, toast } from 'react-toastify';
 import QRCode from 'qrcode';
-import 'jspdf-autotable';
+import jsPDF from 'jspdf';
+import {autoTable} from 'jspdf-autotable';
 
 function formatDateTime(dateTimeString) {
   const date = new Date(dateTimeString);
@@ -143,7 +143,7 @@ function MyBookings() {
       });
 
       if (!overflow) {
-          doc.autoTable({
+          autoTable(doc,{
               startY,
               head: [['#', 'Орын', 'Аты', 'Жыныс', 'Жасы']],
               body: passengerTable,
@@ -153,7 +153,7 @@ function MyBookings() {
       } else {
           // If table overflows, add it to a new page
           doc.addPage();
-          doc.autoTable({
+          autoTable(doc, {
               startY: 50,
               head: [['#', 'Орын', 'Аты', 'Жыныс', 'Жасы']],
               body: passengerTable,

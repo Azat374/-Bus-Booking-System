@@ -1,0 +1,4978 @@
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\Application.java ====
+package com.app;
+
+import org.modelmapper.Conditions;
+import org.modelmapper.ModelMapper;
+import org.modelmapper.convention.MatchingStrategies;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Bean;
+import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+@EnableScheduling
+@SpringBootApplication
+public class Application {
+
+	public static void main(String[] args) {
+		SpringApplication.run(Application.class, args);
+	}
+
+	@Bean // equivalent to <bean id ..../> in xml file
+	public ModelMapper mapper() {
+		ModelMapper modelMapper = new ModelMapper();		modelMapper.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT)
+	.setPropertyCondition(Conditions.isNotNull());
+		return modelMapper;
+	}
+	//configure PasswordEncoder bean 
+	@Bean
+	public PasswordEncoder passwordEncoder()
+	{
+		return new BCryptPasswordEncoder();
+	}
+
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\config\MailConfig.java ====
+package com.app.config;
+
+
+
+import java.util.Properties;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.JavaMailSenderImpl;
+
+@Configuration
+public class MailConfig {
+
+    @Value("${spring.mail.host}")
+    private String host;
+
+    @Value("${spring.mail.port}")
+    private int port;
+
+    @Value("${spring.mail.username}")
+    private String username;
+
+    @Value("${spring.mail.password}")
+    private String password;
+
+    @Bean
+    public JavaMailSender javaMailSender() {
+        JavaMailSenderImpl mailSender = new JavaMailSenderImpl();
+        mailSender.setHost(host);
+        mailSender.setPort(port);
+        mailSender.setUsername(username);
+        mailSender.setPassword(password);
+        Properties props = mailSender.getJavaMailProperties();
+        props.put("mail.transport.protocol", "smtp");
+        props.put("mail.smtp.auth", "true");
+        props.put("mail.smtp.starttls.enable", "true");// Enable STARTTLS
+        return mailSender;
+    }
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\controller\BackendStatusController.java ====
+package com.app.controller;
+
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+	public class BackendStatusController {
+
+	    @GetMapping("/check-backend-status")
+	    public String checkBackendStatus() {
+	        // Perform checks to determine backend status
+	        // For simplicity, let's return a JSON response indicating the status
+	        return "{\"status\": \"online\"}"; 
+	    }
+	}
+
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\controller\BookingsController.java ====
+package com.app.controller;
+
+import java.util.List;
+
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.*;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.app.dto.ApiResponse;
+import com.app.dto.BookingDetailsDto;
+import com.app.dto.BookingsDto;
+import com.app.dto.GetBookings;
+import com.app.service.BookingService;
+
+@RestController
+@RequestMapping("/bookings")
+
+
+public class BookingsController {
+    @Autowired
+    private BookingService bookingService;
+
+    @PostMapping("/book")
+    public ResponseEntity<?> addBookings(@RequestBody BookingsDto booking) {
+        ApiResponse response = bookingService.addBooking(booking);
+        if (response.getStatus() == HttpStatus.CREATED) {
+            return ResponseEntity.status(HttpStatus.CREATED).body(response.getMessage());
+        } else {
+            return ResponseEntity.status(response.getStatus()).body(response.getMessage());
+        }
+    }
+
+    
+    @GetMapping("/getbookings/{userid}")
+    public ResponseEntity<?> getAllBookings(@PathVariable long userid){
+//    	System.out.println("INside booking"+userid);
+    	return ResponseEntity.ok(bookingService.getAllUserBookings(userid));
+    }
+    
+    
+    
+    
+    
+    @GetMapping("/getbooking/{bookingId}")
+    public ResponseEntity<?> getBookingDetails(@PathVariable long bookingId) {
+        try {
+            // Retrieve booking details by ID
+        	BookingDetailsDto bookingDetails = bookingService.getBookingDetails(bookingId);
+            
+            // Check if booking details are found
+            if (bookingDetails != null) {
+                return ResponseEntity.ok(bookingDetails);
+            } else {
+                return ResponseEntity.notFound().build();
+            }
+        } catch (Exception e) {
+            // Handle exceptions
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to retrieve booking details.");
+        }
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/getbookings")
+    public ResponseEntity<?> getAllBookings() {
+        try {
+            // Retrieve all bookings
+            List<GetBookings> allBookings = bookingService.getAllBookings();
+            
+            // Check if bookings are found
+            if (!allBookings.isEmpty()) {
+                return ResponseEntity.ok(allBookings);
+            } else {
+                return ResponseEntity.notFound().build();
+            }
+        } catch (Exception e) {
+            // Handle exceptions
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to retrieve bookings.");
+        }
+    }
+ 
+    @DeleteMapping("/cancelbooking/{bookingid}")
+    public  ApiResponse cancelBooking(@PathVariable long bookingid)
+    {
+    	return bookingService.cancelBookings(bookingid);
+    }
+
+    @GetMapping("/report/general")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<byte[]> generateFullReport() {
+        byte[] report = bookingService.generateFullReport();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_PDF);
+        headers.setContentDisposition(ContentDisposition.builder("attachment")
+                .filename("full-report.pdf")
+                .build());
+
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(report);
+    }
+
+
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\controller\BusController.java ====
+package com.app.controller;
+
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.app.dto.BusDto;
+import com.app.dto.BusDto2;
+import com.app.dto.GetBusDto;
+import com.app.dto.SendBusDto;
+import com.app.entities.Bus;
+import com.app.service.BusService;
+
+@RestController
+@RequestMapping("/bus")
+public class BusController {
+
+	@Autowired
+	private BusService busService;
+
+	@PreAuthorize("hasRole('ADMIN')")
+	@PostMapping("/addbus/{routeId}/{driverId}")
+	public ResponseEntity<?> addBus(@RequestBody BusDto busDto, @PathVariable long routeId, @PathVariable Long driverId) {
+		System.out.println(busDto.toString());
+		Bus bus = convertToBusEntity(busDto);
+		busService.addBus(bus, routeId, driverId);
+		return ResponseEntity.ok("Bus added successfully");
+	}
+
+	@PostMapping("/getbuses")
+	public List<SendBusDto> getBuses(@RequestBody GetBusDto gbd) {
+		return busService.getBuses(gbd);
+	}
+
+	@GetMapping("/getallbuses")
+	public List<SendBusDto> getAllBuses() {
+
+		return busService.getAllBuses();
+	}
+
+	@PreAuthorize("hasRole('ADMIN')")
+	@PutMapping("/updatebus/{busId}/{driverId}")
+	public ResponseEntity<?> updateBus(@RequestBody BusDto2 busDto, @PathVariable long busId, @PathVariable Long driverId) {
+		boolean updated = busService.updateBus(busId, busDto, driverId);
+		if (updated) {
+			return ResponseEntity.ok("Bus updated successfully");
+		} else {
+			return ResponseEntity.badRequest().body("Bus not found or update failed");
+		}
+	}
+
+	@PreAuthorize("hasRole('ADMIN')")
+	@DeleteMapping("/deletebus/{busId}")
+	public ResponseEntity<?> removeBus(@PathVariable long busId) {
+		return ResponseEntity.ok(busService.removeBus(busId));
+	}
+
+	private Bus convertToBusEntity(BusDto busDto) {
+	
+		Bus bus = new Bus();
+		bus.setBusNo(busDto.getBusNo());
+		bus.setTotalSeats(busDto.getTotalSeats());
+		bus.setStartTime(busDto.getStartTime());
+		bus.setEndTime(busDto.getEndTime());
+		bus.setBusClass(busDto.getBusClass());
+		return bus;
+	}
+
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\controller\BusScheduleController.java ====
+package com.app.controller;
+
+import com.app.entities.BusSchedule;
+import com.app.service.BusScheduleService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/schedule")
+public class BusScheduleController {
+
+    @Autowired
+    private BusScheduleService scheduleService;
+
+    // Добавить расписание для конкретного автобуса
+    @PostMapping("/add/{busId}")
+    public BusSchedule addSchedule(@PathVariable Long busId, @RequestBody BusSchedule schedule) {
+        return scheduleService.addSchedule(busId, schedule);
+    }
+
+    // Получить все расписания для автобуса
+    @GetMapping("/{busId}")
+    public List<BusSchedule> getSchedules(@PathVariable Long busId) {
+        return scheduleService.getSchedulesForBus(busId);
+    }
+
+    // Удалить расписание
+    @DeleteMapping("/{scheduleId}")
+    public void deleteSchedule(@PathVariable Long scheduleId) {
+        scheduleService.deleteSchedule(scheduleId);
+    }
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\controller\DriverController.java ====
+package com.app.controller;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
+import com.app.dto.DriverDto;
+import com.app.service.DriverService;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/drivers")
+public class DriverController {
+
+    @Autowired
+    private DriverService driverService;
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/add")
+    public ResponseEntity<?> addDriver(@RequestBody DriverDto driverDto) {
+        return ResponseEntity.ok(driverService.addDriver(driverDto));
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @PutMapping("/update/{driverId}")
+    public ResponseEntity<?> updateDriver(@PathVariable Long driverId, @RequestBody DriverDto driverDto) {
+        return ResponseEntity.ok(driverService.updateDriver(driverId, driverDto));
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @DeleteMapping("/delete/{driverId}")
+    public ResponseEntity<?> deleteDriver(@PathVariable Long driverId) {
+        return ResponseEntity.ok(driverService.deleteDriver(driverId));
+    }
+
+    @GetMapping("/all")
+    public ResponseEntity<List<DriverDto>> getAllDrivers() {
+        return ResponseEntity.ok(driverService.getAllDrivers());
+    }
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\controller\PassengerController.java ====
+package com.app.controller;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.annotation.Secured;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.app.dto.BusSeatBookings;
+import com.app.service.SeatAllocationService;
+
+@RestController
+@RequestMapping("/passenger")
+public class PassengerController {
+
+    @Autowired
+    private SeatAllocationService seatAllocationService;
+///passenger/bus/{busId}/seat-list
+    @GetMapping("/bus/{busId}/seat-list")
+    public ResponseEntity<BusSeatBookings> getPassengerListWithSeatNoForBus(@PathVariable long busId) {
+        BusSeatBookings busSeatBookings = seatAllocationService.getPassengerListWithSeatNoForBus(busId);
+        if (busSeatBookings.getSeatList().isEmpty()) {
+            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+        }
+        return new ResponseEntity<>(busSeatBookings, HttpStatus.OK);
+    }
+}
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\controller\PasswordResetController.java ====
+package com.app.controller;
+
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.app.dto.ResetRequest;
+import com.app.entities.PasswordResetToken;
+import com.app.entities.User;
+import com.app.service.PasswordResetService;
+import com.app.service.UserService;
+
+//PasswordResetController.java
+@RestController
+@RequestMapping("/password-reset")
+public class PasswordResetController {
+
+	@Autowired
+	private UserService userService;
+
+	@Autowired
+	private PasswordResetService passwordResetService;
+
+	@PostMapping("/request")
+	public ResponseEntity<String> requestPasswordReset(@RequestBody Map<String, String> requestBody) {
+		String email = requestBody.get("email");
+		if (email == null) {
+			String errorMessage = "Email not provided";
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorMessage);
+		}
+
+		User user = userService.findByEmail(email);
+		if (user == null) {
+			String errorMessage = "User with email " + email + " not found";
+			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorMessage);
+		}
+
+		passwordResetService.createPasswordResetTokenForUser(user);
+		String message = "Password reset link has been sent to your email";
+		return ResponseEntity.ok().body(message);
+	}
+
+	@PostMapping("/reset")
+    public ResponseEntity<String> resetPassword(@RequestBody ResetRequest resetRequest) {
+        String token = resetRequest.getToken();
+        String password = resetRequest.getPassword();
+
+        PasswordResetToken resetToken = passwordResetService.findByToken(token);
+        if (resetToken == null) {
+            return ResponseEntity.badRequest().body("Invalid token. Please request a new password reset link.");
+        }
+
+        if (resetToken.isExpired()) {
+            return ResponseEntity.badRequest().body("The password reset link has expired. Please request a new one.");
+        }
+
+        User user = resetToken.getUser();
+        if (user == null) {
+            return ResponseEntity.badRequest().body("User not found. Please request a new password reset link.");
+        }
+
+        userService.resetPassword(user, password);
+        passwordResetService.deleteToken(resetToken);
+        return ResponseEntity.ok().body("Password reset successfully.");
+    }
+
+
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\controller\PaymentController.java ====
+package com.app.controller;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+
+import com.stripe.Stripe;
+import com.stripe.exception.StripeException;
+import com.stripe.model.checkout.Session;
+import com.stripe.param.checkout.SessionCreateParams;
+import org.json.JSONObject;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.app.dto.ApiResponse;
+import com.app.dto.BookingsDto;
+import com.app.dto.OrderRequest;
+import com.app.dto.SeatDto;
+import com.app.service.BookingService;
+import com.app.service.PaymentService;
+import com.app.service.SeatService;
+import com.razorpay.Order;
+import com.razorpay.Payment;
+import com.razorpay.RazorpayClient;
+import com.razorpay.RazorpayException;
+
+@RestController
+@RequestMapping("/payment")
+
+public class PaymentController {
+
+	@Autowired
+	private BookingService bookingService;
+	@Autowired
+	private PaymentService paymentService;
+	@Autowired
+	private SeatService seatService;
+	@Value("${razorpay.key.id}")
+	private String RAZORPAY_KEY_ID;
+	@Value("${razorpay.key.secret}")
+	private String RAZORPAY_KEY_SECRET;
+	@Value("${stripe.api.key}")
+	private String stripeApiKey;
+
+	@PostMapping("/razorpay")
+	public ResponseEntity<?> createOrder(@RequestBody OrderRequest request) {
+		try {
+			RazorpayClient client = new RazorpayClient(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET);
+			JSONObject options = new JSONObject();
+			options.put("amount", request.getAmount() * 100); // amount in paisa
+			options.put("currency", "INR");
+			options.put("receipt", "order_rcptid_" + System.currentTimeMillis());
+			options.put("payment_capture", 1); // auto capture payment
+
+			//Order order = client.orders.create(options);
+			System.out.println("Order Details" + options);
+			return ResponseEntity.ok().body(options.toString());
+		} catch (RazorpayException e) {
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+		}
+	}
+
+	@PostMapping("/verify-payment")
+	public ResponseEntity<?> verifyPayment(@RequestBody BookingsDto requestBody) {
+		try {
+			boolean paymentCaptured = verifyPaymentStatus(requestBody.getPaymentId());
+			if (paymentCaptured) {
+				// Payment is successful, proceed with storing data
+				ApiResponse response = bookingService.addBooking(requestBody);
+
+				List<Integer> seatNos = requestBody.getSeatPassengerList().stream().map(i -> i.getSeatNo())
+						.collect(Collectors.toList());
+				// remove from seat(temporary lock db)
+				SeatDto seatDto = new SeatDto();
+				seatDto.setBusId(requestBody.getBusId());
+				seatDto.setSeatNos(seatNos);
+				if (seatService.unlockSeat(seatDto))
+					System.out.println("seat unlocked successfully ");
+				if (response.getStatus() == HttpStatus.CREATED) {
+					// Booking is successful
+					return ResponseEntity.ok().body(Map.of("success", true,"id", response.getId()));
+				} else {
+					// Booking failed, initiate refund
+					boolean refundInitiated = paymentService.initiateRefund(requestBody.getPaymentId(),
+							requestBody.getFare(), "Booking failed");
+					if (refundInitiated) {
+						return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+								.body(Map.of("success", false, "message", "Booking failed. Refund initiated."));
+					} else {
+						return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+								.body(Map.of("success", false, "message", "Booking failed. Refund initiation failed."));
+					}
+				}
+			} else {
+				// Payment is not successful
+				return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("success", false));
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+					.body(Map.of("error", "Payment verification failed"));
+		}
+	}
+	@PostMapping("/stripe")
+	public ResponseEntity<?> createStripeCheckoutSession(@RequestBody OrderRequest orderRequest) {
+		try {
+			// Инициализируем Stripe
+			Stripe.apiKey = stripeApiKey;
+
+			// Создаём параметры для сессии
+			SessionCreateParams params = SessionCreateParams.builder()
+					.addPaymentMethodType(SessionCreateParams.PaymentMethodType.CARD)
+					.setMode(SessionCreateParams.Mode.PAYMENT)
+					.setSuccessUrl("https://yourdomain.com/checkout/success?session_id={CHECKOUT_SESSION_ID}")
+					.setCancelUrl("https://yourdomain.com/checkout/cancel")
+					.addLineItem(
+							SessionCreateParams.LineItem.builder()
+									.setQuantity(1L)
+									.setPriceData(
+											SessionCreateParams.LineItem.PriceData.builder()
+													.setCurrency("kzt")
+													// Преобразуем сумму в центы
+													.setUnitAmount((long) orderRequest.getAmount() * 0)
+													.setProductData(
+															SessionCreateParams.LineItem.PriceData.ProductData.builder()
+																	.setName("Dimash Bus Booking")
+																	.build()
+													)
+													.build()
+									)
+									.build()
+					)
+					.build();
+
+			// Создаём Stripe Checkout Session
+			Session session = Session.create(params);
+
+			// Возвращаем URL для перехода на страницу оплаты
+			return ResponseEntity.ok(Collections.singletonMap("checkoutUrl", session.getUrl()));
+		} catch (StripeException e) {
+			e.printStackTrace();
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+					.body(e.getMessage());
+		}
+	}
+//	@PostMapping("/refund")
+//    public ResponseEntity<?> initiateRefund(@RequestBody RefundRequest request) {
+//        try {
+//            boolean success = paymentService.initiateRefund(request.getPaymentId(),request.getAmount(), request.getReason());
+//            if (success) {
+//                return ResponseEntity.ok().body(Map.of("success", true));
+//            } else {
+//                return ResponseEntity.badRequest().body(Map.of("success", false, "message", "Refund failed"));
+//            }
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+//                    .body(Map.of("error", "Refund initiation failed"));
+//        }
+//    }
+
+	private boolean verifyPaymentStatus(String paymentId) {
+//		try {
+//			RazorpayClient razorpayClient = new RazorpayClient(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET);
+//			Payment payment = razorpayClient.payments.fetch(paymentId);
+//			String paymentStatus = payment.get("status");
+//			return "captured".equals(paymentStatus);
+//		} catch (RazorpayException e) {
+//			e.printStackTrace();
+//			// Handle exceptions
+//			return false; // Return false in case of any error
+//		}
+		return true;
+	}
+
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\controller\RouteController.java ====
+package com.app.controller;
+
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.app.dto.AddRouteDto;
+import com.app.dto.GetRouteResp;
+import com.app.service.RouteService;
+
+@RestController
+@RequestMapping("/route")
+public class RouteController {
+	
+	@Autowired
+	private RouteService routeService;
+	@PreAuthorize("hasRole('ADMIN')")
+	@PostMapping("/addroute")
+	public ResponseEntity<?> addRoute(@RequestBody AddRouteDto ard){
+		
+		return ResponseEntity.ok(routeService.addRoute(ard));
+	}
+	@PreAuthorize("hasRole('ADMIN')")
+	@DeleteMapping("/deleteroute/{routeid}")
+	public ResponseEntity<?> deleteRoute(@PathVariable long routeid){
+		
+		return ResponseEntity.ok(routeService.deleteRoute(routeid));
+	}
+	
+	@PreAuthorize("hasRole('ADMIN')")
+    @PutMapping("/updateroute/{routeid}")
+    public ResponseEntity<?> updateRoute(@PathVariable long routeid, @RequestBody AddRouteDto ard){
+        return ResponseEntity.ok(routeService.updateRoute(routeid, ard));
+    }
+	
+	@GetMapping("/allroutes")
+	public List<GetRouteResp> getAllRoute()
+	{
+		List<GetRouteResp> r=routeService.getRoutes();
+		return r;
+	}
+
+}
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\controller\RouteSegmentController.java ====
+package com.app.controller;
+
+import com.app.entities.RouteSegment;
+import com.app.service.RouteSegmentService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/routesegment")
+public class RouteSegmentController {
+
+    @Autowired
+    private RouteSegmentService segmentService;
+
+    // Добавить промежуточный сегмент в уже существующий Route
+    @PostMapping("/add/{routeId}/{stationId}")
+    public RouteSegment addSegment(@PathVariable Long routeId,
+                                   @PathVariable Long stationId,
+                                   @RequestBody RouteSegment segment) {
+        return segmentService.addSegment(routeId, stationId, segment);
+    }
+
+    // Удалить сегмент
+    @DeleteMapping("/{segmentId}")
+    public void deleteSegment(@PathVariable Long segmentId) {
+        segmentService.deleteSegment(segmentId);
+    }
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\controller\SeatAllocationController.java ====
+package com.app.controller;
+
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.app.dto.BusSeatDetails;
+import com.app.entities.Bus;
+import com.app.service.BusService;
+import com.app.service.SeatAllocationService;
+
+
+@RestController
+@RequestMapping("/seats")
+
+
+public class SeatAllocationController {
+	
+	@Autowired
+	private SeatAllocationService seatAllocationService;
+	@Autowired
+	private BusService busService;
+	
+	@GetMapping("/bus/{busId}")
+	public ResponseEntity<BusSeatDetails> getSeatAllocationsByBus(@PathVariable long busId) {
+	    List<Integer> seatNumbers = seatAllocationService.getSeatNumbersByBus(busId);
+	    Bus bus = busService.getBusById(busId); // Assuming you have a method to retrieve bus details by ID
+	    int totalSeats = bus.getTotalSeats(); // Assuming you have a method to get total seats of a bus
+	    
+	    BusSeatDetails busSeatDetails = new BusSeatDetails();
+	    busSeatDetails.setId(bus.getId());
+	    busSeatDetails.setBusNo(bus.getBusNo());
+	    busSeatDetails.setFrom(bus.getRoute().getStationIdBoarding().getStationName());
+	    busSeatDetails.setStartTime(bus.getStartTime());
+	    busSeatDetails.setTo(bus.getRoute().getStationIdDestination().getStationName());
+	    busSeatDetails.setEndTime(bus.getEndTime());
+	    busSeatDetails.setTotalSeats(bus.getTotalSeats());
+	    seatNumbers.sort((o1,o2)->o1.compareTo(o2));
+	    busSeatDetails.setBookedSeats(seatNumbers);
+	    busSeatDetails.setFare(bus.getRoute().getDistance()*2);
+	    return ResponseEntity.ok(busSeatDetails);
+	}
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\controller\SeatLockController.java ====
+package com.app.controller;
+
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.app.dto.SeatDto;
+import com.app.entities.Seat;
+import com.app.service.SeatService;
+
+@RestController
+@RequestMapping("/seat")
+public class SeatLockController {
+
+	@Autowired
+	private SeatService seatService;
+	
+	
+	@PostMapping("/lock")
+	public ResponseEntity<String> lockSeat(@RequestBody SeatDto seat ) {
+		if (seatService.lockSeat(seat)) {
+			return ResponseEntity.ok("Seats lock successfully");
+		} else {
+			return ResponseEntity.badRequest().body("unsuccessfull");
+		}
+	}
+	@GetMapping("/{busId}")
+	public ResponseEntity<List<Integer>> getAllSeatsForBus(@PathVariable("busId") Long busId) {
+	    List<Integer> seats = seatService.getAllSeatsForBus(busId);
+	    
+	    
+	        return ResponseEntity.ok(seats);
+	   
+	}
+
+
+	
+	@PostMapping("/unlock")
+	public ResponseEntity<String> unlockSeat(@RequestBody SeatDto seat) {
+		if (seatService.unlockSeat(seat)) {
+			return ResponseEntity.ok("Seat unlock successfully");
+		} else {
+			return ResponseEntity.badRequest().body("unsuccessfull");
+		}
+	}
+}
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\controller\StationController.java ====
+package com.app.controller;
+
+import java.util.List;
+import java.util.Optional;
+
+import javax.annotation.security.PermitAll;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.app.dao.StationDao;
+import com.app.dto.GetStationsDto;
+import com.app.dto.StationNameDto;
+import com.app.entities.Station;
+import com.app.service.StationService;
+
+@RestController
+@RequestMapping("/station")
+
+public class StationController {
+
+	@Autowired
+	private StationService stationService;
+	
+	@Autowired
+	private StationDao stationDao;
+
+	// @SecurityRequirement(name = "bearerAuth")
+	@PreAuthorize("hasRole('ADMIN')")
+	@PostMapping("/addstation")
+	public ResponseEntity<?> addStation(@RequestBody StationNameDto stationDto) {
+
+		Station station = new Station();
+		station.setStationName(stationDto.getStation_name());
+		return ResponseEntity.ok(stationService.addStation(station));
+	}
+
+	@PreAuthorize("hasRole('ADMIN')")
+	@DeleteMapping("/deletestation/{stationId}")
+	public ResponseEntity<?> deleteStation(@PathVariable Long stationId) {
+		System.out.println("done in dewlete conts");
+		// You need to implement the logic to delete the station by its ID
+		boolean deleted = stationService.deleteStationById(stationId);
+
+		if (deleted) {
+			return ResponseEntity.ok("Station deleted successfully");
+		} else {
+			return ResponseEntity.badRequest().body("Failed to delete station.");
+		}
+	}
+
+	@PreAuthorize("hasRole('ADMIN')")
+	@PutMapping("/updatestation/{stationId}")
+	public ResponseEntity<?> updateStation(@PathVariable Long stationId, @RequestBody StationNameDto stationDto) {
+	    try {
+	        // Retrieve the station by its ID
+	        Optional<Station> optionalStation = stationDao.findById(stationId);
+
+	        if (optionalStation.isPresent()) {
+	            Station station = optionalStation.get();
+	            // Update the station name
+	            station.setStationName(stationDto.getStation_name());
+
+	            // Save the updated station
+	            Station updatedStation = stationService.updateStation(station);
+
+	            return ResponseEntity.ok(updatedStation);
+	        } else {
+	            return ResponseEntity.notFound().build();
+	        }
+	    } catch (Exception e) {
+	        e.printStackTrace();
+	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred while updating the station.");
+	    }
+	}
+
+
+	@PermitAll
+	@GetMapping("/getstations")
+	public List<GetStationsDto> getStations() {
+		return stationService.getStations();
+	}
+
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\controller\UserController.java ====
+package com.app.controller;
+
+import javax.validation.Valid;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.app.dto.ChangePasswordRequest;
+import com.app.dto.GetUserDto;
+import com.app.dto.SigninRequest;
+import com.app.dto.SigninResponse;
+import com.app.dto.Signup;
+import com.app.entities.User;
+import com.app.security.CustomUserDetails;
+import com.app.security.JwtUtils;
+import com.app.service.UserService;
+
+@RestController
+@RequestMapping("/user")
+
+public class UserController {
+	@Autowired
+	private UserService userService;
+	@Autowired
+	private JwtUtils utils;
+	@Autowired
+	private AuthenticationManager mgr;
+
+	// sign up
+	@PostMapping("/signup")
+	public ResponseEntity<?> userSignup(@RequestBody @Valid Signup dto) {
+			System.out.println("in sign up " + dto);
+		return ResponseEntity.status(HttpStatus.CREATED).body(userService.userRegistration(dto));
+	}
+
+	// sign in
+	/*
+	 * request payload : Auth req DTO : email n password resp payload : In case of
+	 * success : Auth Resp DTO : mesg + JWT token + SC 200 IN case of failure : SC
+	 * 401
+	 */
+	@PostMapping("/signin")
+	public ResponseEntity<?> signinUser(@RequestBody @Valid SigninRequest reqDTO) {
+		System.out.println("in signin " + reqDTO);
+		// simply invoke authentucate(...) on AuthMgr
+		// i/p : Authentication => un verifed credentials
+		// i/f --> Authentication --> imple by UsernamePasswordAuthToken
+		// throws exc OR rets : verified credentials (UserDetails i.pl class: custom
+		// user details)
+
+		Authentication verifiedAuth = mgr
+				.authenticate(new UsernamePasswordAuthenticationToken(reqDTO.getEmail(), reqDTO.getPassword()));
+		// Extract user details from CustomUserDetails
+		CustomUserDetails userDetails = (CustomUserDetails) verifiedAuth.getPrincipal();
+		Long userId = userDetails.getUserId(); // Assuming getId() method exists in CustomUserDetails
+
+		// => auth success
+		return ResponseEntity
+				.ok(new SigninResponse(userId, utils.generateJwtToken(verifiedAuth), "Successful Authentication!!!"));
+
+	}
+
+	@PreAuthorize("hasRole('ADMIN')")
+	@PostMapping("/change-password")
+	public ResponseEntity<?> changePassword(@RequestBody ChangePasswordRequest changePasswordRequest) {
+		// Get the authenticated user details using userId
+		Long userId = changePasswordRequest.getId(); // Fetch the userId from the request or any other secure means
+
+		// Verify the old password
+		if (!userService.verifyPassword(userId, changePasswordRequest.getOldPassword())) {
+			return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body("Incorrect old password");
+		}
+
+		// Change the password
+		userService.changePassword(userId, changePasswordRequest.getNewPassword());
+
+		return ResponseEntity.ok("Password changed successfully");
+	}
+
+	@GetMapping("/{userId}")
+	public ResponseEntity<GetUserDto> getUserById(@PathVariable Long userId) {
+		User user = userService.getUserById(userId);
+		if (user != null) {
+			GetUserDto userdto=new GetUserDto();
+			userdto.setAge(user.getAge());
+			userdto.setEmail(user.getEmail());
+			userdto.setFirstName(user.getFirstName());
+			userdto.setLastName(user.getLastName());
+			userdto.setGender(user.getGender());
+			userdto.setMobile(user.getMobile());
+			return ResponseEntity.ok(userdto);
+		} else {
+			return ResponseEntity.notFound().build();
+		}
+
+//	
+//	@PutMapping("/updateprofile/{userid}")
+//	public UpdateUserDto updateEmpDetails(@PathVariable long userid,@RequestBody UpdateUserDto user) {
+//		return userService.updateEmpDetails(user,userid);
+//	}
+
+	}
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\dao\BookingsDao.java ====
+package com.app.dao;
+
+import java.util.List;
+import java.util.Optional;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import com.app.entities.Bookings;
+import com.app.entities.User;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+public interface BookingsDao extends JpaRepository<Bookings, Long>{
+	
+	Optional<List<Bookings>> findByUser(User u);
+	void delete(Bookings id);
+
+	@Query("SELECT b FROM Bookings b WHERE b.bus.driver.id = :driverId")
+	List<Bookings> findByDriverId(@Param("driverId") Long driverId);
+
+	@Query("SELECT COUNT(b) FROM Bookings b WHERE b.bus.id = :busId")
+	int countTripsByBusId(@Param("busId") Long busId);
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\dao\BusDao.java ====
+package com.app.dao;
+
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import com.app.entities.Bus;
+import com.app.entities.Routes;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+public interface BusDao extends JpaRepository<Bus, Long>{
+	
+	Optional<Bus> findByBusNo(int busNo);
+	Optional<Bus> findById(long Id);
+	List<Bus> findByRoute(Routes r);
+	Optional<Bus> findByBusNoAndStartTime(int busNo,LocalDate date);
+
+	Boolean existsByBusNo(String busNo);
+
+
+	@Query("SELECT b FROM Bus b WHERE b.driver.id = :driverId")
+	List<Bus> findByDriverId(@Param("driverId") Long driverId);
+
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\dao\BusScheduleDao.java ====
+package com.app.dao;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import com.app.entities.BusSchedule;
+
+public interface BusScheduleDao extends JpaRepository<BusSchedule, Long> {
+    // Доп. методы поиска, если нужно
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\dao\DriverDao.java ====
+package com.app.dao;
+
+import java.util.Optional;
+import org.springframework.data.jpa.repository.JpaRepository;
+import com.app.entities.Driver;
+
+public interface DriverDao extends JpaRepository<Driver, Long> {
+    Optional<Driver> findByLicenseNumber(String licenseNumber);
+    boolean existsByLicenseNumber(String licenseNumber);
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\dao\PassengerDao.java ====
+package com.app.dao;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import com.app.entities.Passenger;
+
+public interface PassengerDao extends JpaRepository<Passenger, Long> {
+
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\dao\PasswordResetTokenRepository.java ====
+package com.app.dao;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import com.app.entities.PasswordResetToken;
+
+@Repository
+public interface PasswordResetTokenRepository extends JpaRepository<PasswordResetToken, Long> {
+
+    PasswordResetToken findByToken(String token);
+}
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\dao\RouteDao.java ====
+package com.app.dao;
+
+import java.util.Optional;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import com.app.entities.Routes;
+import com.app.entities.Station;
+
+public interface RouteDao  extends JpaRepository<Routes, Long>{
+	
+//	List<Routes> findByStation_id_boardingAndStation_id_destination();
+	Optional<Routes> findByStationIdBoardingAndStationIdDestination(Station from,Station to);
+	
+	 boolean existsByStationIdBoardingAndStationIdDestinationAndDistance(
+		        Station stationIdBoarding, Station stationIdDestination, double distance
+		    );
+	 
+
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\dao\RouteSegmentDao.java ====
+package com.app.dao;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import com.app.entities.RouteSegment;
+
+public interface RouteSegmentDao extends JpaRepository<RouteSegment, Long> {
+    // при необходимости кастомные методы
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\dao\SeatAllocationDao.java ====
+package com.app.dao;
+
+import java.util.List;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import com.app.entities.Bus;
+import com.app.entities.SeatAllocation;
+
+public interface SeatAllocationDao extends JpaRepository<SeatAllocation, Long> {
+	
+	 List<SeatAllocation> findByBusId(long busId);
+	 boolean existsByBusAndSeatNo(Bus bus, int seatNo);
+	 //List<SeatAllocation> findByBooking(Bookings b);
+	 
+
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\dao\SeatDao.java ====
+package com.app.dao;
+
+import java.util.List;
+import java.util.Optional;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import com.app.entities.Seat;
+
+public interface SeatDao extends JpaRepository<Seat, Long> {
+
+	Seat findByBusId(Long busId);
+
+	List<Seat> findSeatByBusId(Long busId);
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\dao\SeatWithTimeStampDao.java ====
+package com.app.dao;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import com.app.entities.SeatWithTimeStamp;
+
+public interface SeatWithTimeStampDao extends JpaRepository<SeatWithTimeStamp, Long> {
+
+	List<SeatWithTimeStamp> findByTimestampBefore(LocalDateTime timestamp);
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\dao\StationDao.java ====
+package com.app.dao;
+
+import java.util.Optional;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import com.app.entities.Station;
+
+public interface StationDao extends JpaRepository<Station, Long>{
+	
+	Optional<Station> findByStationName(String s);
+	Station getStationById(Long Id);
+
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\dao\UserDao.java ====
+package com.app.dao;
+
+import java.util.Optional;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import com.app.entities.User;
+
+public interface UserDao extends JpaRepository<User,Long>{
+//derived finder 
+	Optional<User> findByEmail(String email);
+	
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\dto\AddRouteDto.java ====
+package com.app.dto;
+
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotNull;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
+public class AddRouteDto {
+
+	@NotNull(message = "Station ID from is required")
+	private long stationIdFrom;
+
+	@NotNull(message = "Station ID to is required")
+	private long stationIdTo;
+
+	@Min(value = 0, message = "Distance must be greater than or equal to 0")
+	private int distance;
+
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\dto\ApiResponse.java ====
+package com.app.dto;
+
+import java.time.LocalDateTime;
+
+import org.springframework.http.HttpStatus;
+
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+//DTO :  resp DTO : to send API resp from rest server ---> rest clnt
+@NoArgsConstructor
+@Getter
+@Setter
+public class ApiResponse {
+	private LocalDateTime timeStamp;
+	private String message;
+	private HttpStatus status;
+
+	private long id;
+	public ApiResponse(String message) {
+		super();
+		this.message = message;
+		this.timeStamp=LocalDateTime.now();
+	}
+	 public ApiResponse(String message, HttpStatus created) {
+	        this.message = message;
+	        this.status = created;
+	        this.timeStamp = LocalDateTime.now();
+	    }
+	public ApiResponse(String message, HttpStatus status, long id) {
+		super();
+		this.message = message;
+		this.status = status;
+		this.id = id;
+		this.timeStamp = LocalDateTime.now();
+	}
+	 
+	
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\dto\BookingDetailsDto.java ====
+package com.app.dto;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class BookingDetailsDto {
+
+	
+	private String busNo;
+	private String from;
+    private LocalDateTime startTime;
+    private String to;
+    private LocalDateTime endTime;
+    private double totalFare;
+    private LocalDateTime bookingDateTime;
+	private List<SeatPassengerDto> seatPassengerList;
+	
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\dto\BookingsDto.java ====
+package com.app.dto;
+import java.util.List;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+
+
+public class BookingsDto {
+
+	String paymentId;
+	String razorpayOrderId;
+	String razorpaySignature;
+	private long busId;
+	private long userId;
+	private double fare;
+	
+	private List<SeatPassengerDto> seatPassengerList;
+	
+	
+
+
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\dto\BusDto.java ====
+package com.app.dto;
+
+import java.time.LocalDateTime;
+
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Pattern;
+
+import com.app.entities.BusClass;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class BusDto {
+
+	 @Pattern(regexp = "[A-Z]{2}[0-9]{2}[A-Z]{2}[0-9]{4}", message = "Invalid vehicle number")
+	    private String busNo;
+
+    @Min(value = 1, message = "Total seats must be greater than 0")
+    private int totalSeats;
+
+    @NotNull(message = "Start time cannot be null")
+    private LocalDateTime startTime;
+
+    @NotNull(message = "End time cannot be null")
+    private LocalDateTime endTime;
+
+    @Min(value = 1, message = "Route ID must be greater than 0")
+    private int routeId;
+
+    @NotNull(message = "Bus class must be specified")
+    private BusClass busClass;
+   
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\dto\BusDto2.java ====
+package com.app.dto;
+
+import java.time.LocalDateTime;
+
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Pattern;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class BusDto2 {
+
+	 @Pattern(regexp = "[A-Z]{2}[0-9]{2}[A-Z]{2}[0-9]{4}", message = "Invalid vehicle number")
+	    private String busNo;
+
+  
+   
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\dto\BusSeatBookings.java ====
+package com.app.dto;
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class BusSeatBookings {
+
+	private String busNo;
+	private String from;
+    private LocalDateTime startTime;
+    private String to;
+    private LocalDateTime endTime;
+    private int totalSeats;
+	List<SeatNoAndPassengerDto> seatList = new ArrayList<>();
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\dto\BusSeatDetails.java ====
+package com.app.dto;
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
+public class BusSeatDetails {
+
+	private  long id; 
+	private String busNo;
+	private String from;
+    private LocalDateTime startTime;
+    private String to;
+    private LocalDateTime endTime; 
+    private int totalSeats;
+    private double fare;
+    List<Integer> bookedSeats=new ArrayList<>();
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\dto\ChangePasswordRequest.java ====
+package com.app.dto;
+
+import javax.validation.constraints.NotBlank;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
+public class ChangePasswordRequest {
+	
+	
+	private long id;
+	
+	@NotBlank(message = "Old password is required")
+    private String oldPassword;
+
+    @NotBlank(message = "New password is required")
+    private String newPassword;
+
+  
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\dto\DriverDto.java ====
+package com.app.dto;
+
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.Pattern;
+import lombok.*;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class DriverDto {
+
+    private Long id;
+
+    @NotBlank(message = "First name is required")
+    private String firstName;
+
+    @NotBlank(message = "Last name is required")
+    private String lastName;
+
+    @NotBlank(message = "License number is required")
+    @Pattern(regexp = "[A-Z0-9]{10,15}", message = "Invalid license number format")
+    private String licenseNumber;
+
+    @Pattern(regexp = "^\\+?[0-9]{10}$", message = "Invalid phone number")
+    private String phoneNumber;
+
+    private Double salary;
+
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\dto\GetBookingDto.java ====
+package com.app.dto;
+
+import java.time.LocalDateTime;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
+public class GetBookingDto {
+	private long id;
+	private String busNo;
+	private String from;
+    private LocalDateTime startTime;
+    private String to;
+    private LocalDateTime endTime;
+    private double totalFare;
+    private LocalDateTime bookingDateTime;
+
+	
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\dto\GetBookings.java ====
+package com.app.dto;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+import com.app.entities.Base;
+import com.app.entities.Bus;
+import com.app.entities.SeatAllocation;
+import com.app.entities.User;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@ToString
+
+public class GetBookings {
+
+	private long bookingId;
+	private String paymentId;
+	private String razorpayOrderId;
+	private String razorpaySignature;
+	private String busNo;
+	private long busId;
+	private double totalFare;
+	private long userId;
+	private String userName;
+	private LocalDateTime bookingDateTime;
+	private int noOfSeats; 
+
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\dto\GetBusAndPassengerList.java ====
+package com.app.dto;
+
+public class GetBusAndPassengerList {
+
+	
+	
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\dto\GetBusDto.java ====
+package com.app.dto;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
+public class GetBusDto {
+	
+	private String busNo;
+	private long from;
+	private long to;
+	private LocalDate date;
+	private LocalDateTime startTime;
+	private LocalDateTime endTime;
+	
+
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\dto\GetRouteResp.java ====
+package com.app.dto;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
+public class GetRouteResp {
+	
+	Long id;
+	double distance;
+	String from;
+	String to;
+	long fromId;
+	long toId;
+
+
+}
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\dto\GetStationsDto.java ====
+package com.app.dto;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
+
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
+@ToString
+public class GetStationsDto {
+	
+	private long id;
+	private String station_name;
+
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\dto\GetUserDto.java ====
+package com.app.dto;
+
+import com.app.entities.UserRole;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+
+
+@Getter
+@Setter	
+@AllArgsConstructor
+@NoArgsConstructor
+public class GetUserDto {
+
+	private String firstName;
+
+	private String lastName;
+
+
+	private String mobile;
+
+	private String email;
+
+	private int age;
+	private String gender;
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\dto\OrderRequest.java ====
+package com.app.dto;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Setter
+@Getter
+@AllArgsConstructor
+@NoArgsConstructor
+
+public class OrderRequest {
+
+	double amount;
+}
+
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\dto\PassengerDto.java ====
+package com.app.dto;
+
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Pattern;
+import javax.validation.constraints.PositiveOrZero;
+import javax.validation.constraints.Size;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+
+public class PassengerDto {
+
+	 @NotBlank(message = "First name is required")
+	    @Size(min = 2, max = 50, message = "First name must be between 2 and 50 characters")
+	    private String firstName;
+
+	    @NotBlank(message = "Last name is required")
+	    @Size(min = 2, max = 50, message = "Last name must be between 2 and 50 characters")
+	    private String lastName;
+
+	    @NotBlank(message = "Gender is required")
+	    @Pattern(regexp = "^(?:male|female)$", message = "Gender must be 'male' or 'female'")
+	    private String gender;
+
+	    @NotNull(message = "Age is required")
+	    @PositiveOrZero(message = "Age must be a positive number or zero")
+	    private int age;
+
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\dto\RefundRequest.java ====
+package com.app.dto;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
+
+public class RefundRequest {
+
+	private String paymentId;
+	private double amount;
+    private String reason;
+
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\dto\ResetRequest.java ====
+package com.app.dto;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
+public class ResetRequest {
+
+	 private String token;
+     private String password;
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\dto\SeatAllocationRequestDto.java ====
+package com.app.dto;
+
+import java.time.LocalDate;
+
+import com.app.entities.Bookings;
+import com.app.entities.Passenger;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+//@ToString
+public class SeatAllocationRequestDto {
+	private int seatNo;
+	private LocalDate dateOfJourney;
+	private Passenger passeneger;
+	private Bookings booking;
+
+
+
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\dto\SeatDto.java ====
+package com.app.dto;
+import java.util.List;
+import com.app.entities.Base;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
+
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
+@ToString
+public class SeatDto {
+
+	
+	private long busId;
+	private List<Integer> seatNos;
+	
+}
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\dto\SeatNoAndPassengerDto.java ====
+package com.app.dto;
+
+import com.app.entities.Passenger;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+
+
+public class SeatNoAndPassengerDto {
+
+	
+	private int seatNo;
+	private Passenger passenger;
+	
+	
+    
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\dto\SeatPassengerDto.java ====
+package com.app.dto;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+
+public class SeatPassengerDto {
+
+	
+	private int seatNo;
+	private PassengerDto passenger;
+	
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\dto\SendBusDto.java ====
+package com.app.dto;
+
+import java.time.LocalDateTime;
+
+import com.app.entities.BusClass;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
+public class SendBusDto {
+	
+	private long id;
+	private String busNo;
+	private String from;
+	private String to;
+	private int cost;
+	//private int availableSeats;
+	private String duration;
+	private LocalDateTime startTime;
+	private LocalDateTime endTime;
+	private Long driverId;
+	private BusClass busClass;
+
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\dto\SigninRequest.java ====
+package com.app.dto;
+
+import javax.validation.constraints.Email;
+
+import org.hibernate.validator.constraints.Length;
+
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
+
+@Getter
+@Setter
+@ToString
+public class SigninRequest {
+	
+//	@NotBlank(message = "Email can't be blank")
+	@Email(message = "Invalid email format")
+	private String email;
+//	@NotBlank
+	@Length(min = 3,max=20,message = "Invalid password length")
+	private String password;
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\dto\SigninResponse.java ====
+package com.app.dto;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class SigninResponse {
+	private long id;
+	private String jwt;
+	private String mesg;
+	public SigninResponse(String jwt, String mesg) {
+		super();
+		this.jwt = jwt;
+		this.mesg = mesg;
+	}
+
+	
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\dto\Signup.java ====
+package com.app.dto;
+
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
+import javax.validation.constraints.Email;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Pattern;
+
+import com.app.entities.UserRole;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonProperty.Access;
+
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Getter
+@Setter
+@NoArgsConstructor
+public class Signup {
+	@JsonProperty(access = Access.READ_ONLY) // this property only used during ser.
+	private Long id;
+	@NotBlank(message = "First Name required")
+	private String firstName;
+	@NotBlank(message = "Last Name required")
+	private String lastName;
+	@NotBlank(message = "Email is required")
+	@Email(message = "Invalid Email!!!")
+	private String email;
+	@NotBlank(message = "Mobile number is required")
+	@Pattern(regexp = "^\\+?[0-9]{10}$", message = "Invalid Mobile number ")
+	private String mobile;
+	@NotNull(message = "Age is required")
+    @Min(value = 18, message = "Age must be at least 18")
+    private Integer age;
+    
+    @NotBlank(message = "Gender is required")
+    @Pattern(regexp = "^(Male|Female|Other)$", message = "Invalid gender")
+    private String gender;
+	
+	@JsonProperty(access = Access.WRITE_ONLY)
+	private String password;
+	
+	@JsonProperty(access=Access.READ_ONLY)
+	@Enumerated(EnumType.STRING)
+	private UserRole role=UserRole.ROLE_CUSTOMER;
+	
+	public Signup(String firstName, String lastName,
+			String email, String password, UserRole role) {
+		super();
+		this.firstName = firstName;
+		this.lastName = lastName;
+		this.email = email;
+		this.password = password;
+	}
+	
+
+	
+	
+	
+	
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\dto\StationNameDto.java ====
+package com.app.dto;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
+
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
+@ToString
+public class StationNameDto {
+	
+	private String station_name;
+
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\dto\TempSeatDto.java ====
+package com.app.dto;
+
+import java.util.List;
+
+public class TempSeatDto {
+
+	long busId;
+	List<Integer> seats;
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\dto\VerifyPaymentRequest.java ====
+package com.app.dto;
+
+public class VerifyPaymentRequest {
+
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\entities\Base.java ====
+package com.app.entities;
+
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.MappedSuperclass;
+
+import lombok.Getter;
+import lombok.Setter;
+
+
+@MappedSuperclass // to tell hib , not to create any tables n other entities will extend from it
+@Getter
+@Setter
+public class Base {
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;	
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\entities\Bookings.java ====
+package com.app.entities;
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.persistence.CascadeType;
+import javax.persistence.Entity;
+import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
+import javax.persistence.Version;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
+
+@Entity
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@ToString
+public class Bookings extends Base {
+
+	String paymentId;
+	String razorpayOrderId;
+	String razorpaySignature;
+	
+	@Version
+    private int version;//used for optimistic locking
+ 
+   
+    @ManyToOne
+    private User user; // User Relationship
+    
+    @ManyToOne
+    private Bus bus; // Bus Relationship
+
+
+    private double  fare;
+    
+    
+    private LocalDateTime bookingDateTime;
+
+    @OneToMany(mappedBy = "booking", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<SeatAllocation> seatList = new ArrayList<>();
+
+      
+    
+    public void addSeat(SeatAllocation s) {
+        seatList.add(s); // Parent to child
+        s.setBooking(this); // Child to parent
+    }
+
+    public void removeSeat(SeatAllocation s) {
+        seatList.remove(s);
+        s.setBooking(null);
+    }
+
+    
+}
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\entities\Bus.java ====
+package com.app.entities;
+
+import javax.persistence.*;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Pattern;
+import java.time.LocalDateTime;
+
+import lombok.*;
+
+@Entity
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
+@ToString
+public class Bus extends Base {
+
+    @Column(unique = true)
+    @Pattern(regexp = "[A-Z]{2}[0-9]{2}[A-Z]{2}[0-9]{4}", message = "Invalid vehicle number")
+    private String busNo;
+
+    @Min(value = 1, message = "Total seats must be greater than 0")
+    private int totalSeats;
+
+    @NotNull(message = "Start Datetime cannot be null")
+    private LocalDateTime startTime;
+
+    @NotNull(message = "End Datetime cannot be null")
+    private LocalDateTime endTime;
+
+    @ManyToOne
+    private Routes route;
+
+    @ManyToOne
+    @JoinColumn(name = "driver_id")
+    private Driver driver;
+
+    @Enumerated(EnumType.STRING)
+    private BusClass busClass;
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\entities\BusClass.java ====
+package com.app.entities;
+
+public enum BusClass {
+    BUSINESS, COMFORT, ECONOMY;
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\entities\BusSchedule.java ====
+package com.app.entities;
+
+import java.time.LocalTime;
+import javax.persistence.*;
+
+import lombok.*;
+
+@Entity
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class BusSchedule extends Base {
+
+    @ManyToOne
+    private Bus bus;  // Какой автобус ходит по расписанию
+
+    // Например, 1, 4, 10 число месяца
+    private Integer dayOfMonth;
+
+    // Время отправления
+    private LocalTime departureTime;
+
+    private boolean active = true;
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\entities\Driver.java ====
+package com.app.entities;
+
+import javax.persistence.*;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.Pattern;
+import lombok.*;
+
+import java.util.ArrayList;
+import java.util.List;
+
+@Entity
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@ToString
+public class Driver extends Base {
+
+    @NotBlank(message = "First name is required")
+    @Column(length = 20, nullable = false)
+    private String firstName;
+
+    @NotBlank(message = "Last name is required")
+    @Column(length = 20, nullable = false)
+    private String lastName;
+
+    @NotBlank(message = "License number is required")
+    @Pattern(regexp = "[A-Z0-9]{10,15}", message = "Invalid license number format")
+    @Column(unique = true, length = 15, nullable = false)
+    private String licenseNumber;
+
+    @Pattern(regexp = "^\\+?[0-9]{10}$", message = "Invalid phone number")
+    @Column(length = 15)
+    private String phoneNumber;
+
+    @OneToMany(mappedBy = "driver", cascade = CascadeType.ALL)
+    private List<Bus> buses = new ArrayList<>();
+
+    @Column(nullable = false)
+    private Double salary = 0.0;
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\entities\Passenger.java ====
+package com.app.entities;
+
+import javax.persistence.Entity;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Entity
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class Passenger extends Base{
+	
+
+	private String firstName;
+	private String lastName;
+	private String gender;
+	private int age;
+	
+	
+	
+	
+
+
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\entities\PasswordResetToken.java ====
+package com.app.entities;
+
+import java.util.Date;
+
+import javax.persistence.Entity;
+import javax.persistence.FetchType;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.OneToOne;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+
+@Entity
+@NoArgsConstructor
+@AllArgsConstructor
+@Getter
+@Setter
+public class PasswordResetToken {
+
+ @Id
+ @GeneratedValue(strategy = GenerationType.IDENTITY)
+ private Long id;
+
+ @OneToOne(targetEntity = User.class, fetch = FetchType.EAGER)
+ @JoinColumn(nullable = false, name = "user_id")
+ private User user;
+
+ private String token;
+
+ private Date expiryDate;
+ 
+ public boolean isExpired() {
+     return expiryDate != null && expiryDate.before(new Date());
+ }
+
+ 
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\entities\Routes.java ====
+package com.app.entities;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.persistence.CascadeType;
+import javax.persistence.Entity;
+import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
+
+@Entity
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
+@ToString
+public class Routes extends Base{
+
+	@ManyToOne
+//    @JoinColumn(name = "station_id_boarding")
+    private Station stationIdBoarding;
+
+    @ManyToOne
+  //  @JoinColumn(name = "station_id_destination")
+    private Station stationIdDestination;
+
+    private double distance;
+    
+    @OneToMany(mappedBy = "route",cascade = CascadeType.ALL,orphanRemoval = true)
+    private List<Bus> buses;
+
+	@OneToMany(mappedBy = "route", cascade = CascadeType.ALL, orphanRemoval = true)
+	private List<RouteSegment> segments = new ArrayList<>();
+//    @OneToMany(mappedBy = "routes",cascade = CascadeType.ALL,orphanRemoval = true,fetch = FetchType.EAGER)
+//    private List<Bookings> routes;
+    
+    public void addBus(Bus p) {
+		buses.add(p); //parent to child reln
+		p.setRoute(this);//child to parent reln
+	}
+	
+	
+	//removing Bus from 
+	public void removeBus(Bus p) {
+		buses.remove(p);
+		p.setRoute(null);
+	}
+	
+//	public void addBooking(Bookings b) {
+//		routes.add(b); //parent to child reln
+//		b.setRoutes(this);//child to parent reln
+//	}
+//	
+//	
+//	
+//	public void removeBus(Bookings b) {
+//		routes.remove(b);
+//		b.setRoutes(null);
+//	}
+
+
+
+	
+	
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\entities\RouteSegment.java ====
+package com.app.entities;
+
+import javax.persistence.*;
+import lombok.*;
+
+@Entity
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class RouteSegment extends Base {
+
+    @ManyToOne
+    private Routes route; // указывает, к какому маршруту относится сегмент
+
+    @ManyToOne
+    private Station station; // промежуточная станция
+
+    private int orderIndex;  // порядок следования (0 = первая остановка, 1, 2...)
+
+    // расстояние от этой станции до следующей (или время в пути и т.д.)
+    private double distanceToNext;
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\entities\Seat.java ====
+package com.app.entities;
+
+import java.util.List;
+
+import javax.persistence.CascadeType;
+import javax.persistence.Entity;
+import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
+
+@Entity
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
+@ToString
+public class Seat extends Base{
+
+	@ManyToOne
+	private Bus bus;
+
+	@OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+	private List<SeatWithTimeStamp> seats;
+	
+}
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\entities\SeatAllocation.java ====
+package com.app.entities;
+
+import javax.persistence.Entity;
+import javax.persistence.ManyToOne;
+import javax.persistence.OneToOne;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Entity
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
+
+public class SeatAllocation extends Base {
+
+//	private LocalDate dateOfJourney;
+
+	@ManyToOne
+	private Bookings booking;
+
+	private int seatNo;
+
+	@OneToOne
+	private Passenger passenger;
+	
+	@ManyToOne
+	private Bus bus;
+	
+	
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\entities\SeatPrimaryKey.java ====
+package com.app.entities;
+
+import java.io.Serializable;
+
+import javax.persistence.Column;
+import javax.persistence.Embeddable;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Embeddable
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
+public class SeatPrimaryKey implements Serializable {
+    
+    @Column(name = "bus_id")
+    private long busId;
+    
+    @Column(name = "seat_no")
+    private int seatNo;
+    
+    
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\entities\SeatWithTimeStamp.java ====
+package com.app.entities;
+
+import java.time.LocalDateTime;
+
+import javax.persistence.Entity;
+import javax.persistence.Temporal;
+import javax.persistence.TemporalType;
+
+import org.hibernate.annotations.CreationTimestamp;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
+@Entity
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
+@ToString
+public class SeatWithTimeStamp extends Base {
+
+	Integer seatNo;
+	
+	private LocalDateTime timestamp;
+
+}
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\entities\Station.java ====
+package com.app.entities;
+
+import java.util.List;
+
+import javax.persistence.Entity;
+import javax.persistence.FetchType;
+import javax.persistence.OneToMany;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
+
+@Entity
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
+@ToString
+public class Station extends Base{
+	private String stationName;
+	@JsonIgnore
+    @OneToMany(mappedBy = "stationIdBoarding",fetch = FetchType.EAGER)
+    private List<Routes> boardingRoutes;
+	@JsonIgnore
+    @OneToMany(mappedBy = "stationIdDestination")
+    private List<Routes> destinationRoutes;
+
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\entities\User.java ====
+package com.app.entities;
+
+import java.util.List;
+
+import javax.persistence.*;
+import javax.validation.constraints.Email;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
+
+@Entity
+@Table(name = "\"user\"")
+@NoArgsConstructor
+@AllArgsConstructor
+@Getter
+@Setter
+@ToString(exclude = "password") // toString excluding password
+public class User extends Base {
+	@Column(length = 20)
+	private String firstName;
+	@Column(length = 20)
+	private String lastName;
+	@Enumerated(EnumType.STRING)
+	@Column(length = 30)
+	private UserRole role;
+	
+	@Column(unique = true) 
+	private String mobile;
+	
+	@Column(length = 30,unique = true) 
+	@Email(message = "Please provide a valid email address")
+	private String email;
+	private int age;
+	private String gender;
+	@Column(length = 300, nullable = false)
+	private String password;
+	
+	
+	
+	
+	
+	@OneToMany(mappedBy="user",cascade=CascadeType.ALL,orphanRemoval=true,fetch = FetchType.EAGER)
+	private List<Bookings> bookings;
+	
+	
+	
+	
+	//adding Booking in user account
+	public void addBooking(Bookings p) {
+		bookings.add(p); //parent to child reln
+		p.setUser(this);//child to parent reln
+	}
+
+
+	//removing Booking from user account
+	public void removeBooking(Bookings p) {
+		bookings.remove(p);
+		p.setUser(null);
+	}
+	
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\entities\UserRole.java ====
+package com.app.entities;
+
+public enum UserRole {
+	ROLE_CUSTOMER, ROLE_ADMIN, ROLE_USER
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\exception_handler\GlobalException.java ====
+package com.app.exception_handler;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+@RestControllerAdvice
+public class GlobalException {
+	
+	@ExceptionHandler(MethodArgumentNotValidException.class)
+	public ResponseEntity<?> handleMethodArgumentNotValidException(MethodArgumentNotValidException e) {
+		System.out.println("method arg invalid " + e);
+		// API : List<FieldError> getFieldErrors()
+		// convert list of field errs -->Map<Field name , Error mesg>
+		Map<String, String> errMap = new HashMap<>();
+		// simply converting LIst of errs ---> Map of errs --> for better readability
+		// for the front end
+		for (FieldError field : e.getFieldErrors())
+			errMap.put(field.getField(), field.getDefaultMessage());
+		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errMap);
+	}
+	
+	@ExceptionHandler(RuntimeException.class)
+	public ResponseEntity<?> handleRuntimeException(RuntimeException e){
+		
+	
+		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+	}
+
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\security\CustomAuthenticationEntryPoint.java ====
+package com.app.security;
+
+import java.io.IOException;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.web.AuthenticationEntryPoint;
+import org.springframework.stereotype.Component;
+
+@Component
+public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint {
+
+	@Override
+	public void commence(HttpServletRequest request, HttpServletResponse response,
+			AuthenticationException authException) throws IOException, ServletException {
+		// send error message : SC 401
+		response.sendError(HttpServletResponse.SC_UNAUTHORIZED, authException.getMessage());
+
+	}
+
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\security\CustomUserDetails.java ====
+package com.app.security;
+
+import java.util.Collection;
+import java.util.List;
+
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+
+import com.app.entities.User;
+
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
+
+public class CustomUserDetails implements UserDetails {
+	private User user;
+
+	public CustomUserDetails(User user) {
+		this.user = user;
+	}
+
+	@Override
+	public Collection<? extends GrantedAuthority> getAuthorities() {
+		// class : SimpleGrantedAuthority --> GrantedAuthority
+		return List.of(new 
+				SimpleGrantedAuthority(user.getRole().toString()));
+	}
+
+	@Override
+	public String getPassword() {
+		// TODO Auto-generated method stub
+		return user.getPassword();
+	}
+
+	@Override
+	public String getUsername() {
+		// TODO Auto-generated method stub
+		return user.getEmail();
+	}
+	public long getUserId()
+	{
+		return user.getId();
+		
+	}
+
+	@Override
+	public boolean isAccountNonExpired() {
+		// TODO Auto-generated method stub
+		return true;
+	}
+
+	@Override
+	public boolean isAccountNonLocked() {
+		// TODO Auto-generated method stub
+		return true;
+	}
+
+	@Override
+	public boolean isCredentialsNonExpired() {
+		// TODO Auto-generated method stub
+		return true;
+	}
+
+	@Override
+	public boolean isEnabled() {
+		// TODO Auto-generated method stub
+		return true;
+	}
+
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\security\CustomUserDetailsService.java ====
+package com.app.security;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.app.dao.UserDao;
+import com.app.entities.User;
+
+@Service
+@Transactional
+public class CustomUserDetailsService implements UserDetailsService {
+	// dep : dao layer
+	@Autowired
+	private UserDao userDao;
+
+	@Override
+	public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+		User user = userDao.findByEmail(email)
+				.orElseThrow(() -> new UsernameNotFoundException("Email not found!!!!"));
+		return new CustomUserDetails(user);
+	}
+
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\security\JwtAuthenticationFilter.java ====
+package com.app.security;
+
+import java.io.IOException;
+import java.util.List;
+
+import javax.servlet.FilterChain;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Component;
+import org.springframework.web.filter.OncePerRequestFilter;
+
+import io.jsonwebtoken.Claims;
+
+@Component // spring bean : can be injected in other spring beans
+public class JwtAuthenticationFilter extends OncePerRequestFilter {
+	// token verification
+	// dep : JWT utils
+	@Autowired
+	private JwtUtils utils;
+
+	@Override
+	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+			throws ServletException, IOException {
+		// check auth header from incoming request
+		String authHeader = request.getHeader("Authorization");
+		if (authHeader != null && authHeader.startsWith("Bearer ")) {
+			// => req header contains JWT
+			String jwt = authHeader.substring(7);
+			// validate JWT
+			Claims payloadClaims = utils.validateJwtToken(jwt);
+			// get user name from the claims
+			String email = utils.getUserNameFromJwtToken(payloadClaims);
+			// get granted authorities as a custom claim
+			List<GrantedAuthority> authorities = utils.getAuthoritiesFromClaims(payloadClaims);
+			// add username/email n granted authorities in Authentication object
+			UsernamePasswordAuthenticationToken token = new UsernamePasswordAuthenticationToken(email, null,
+					authorities);
+			// save this auth token under spring sec so that subsequent filters will NOT
+			// retry the auth again
+			SecurityContextHolder.getContext().setAuthentication(token);
+			System.out.println("saved auth token in sec ctx");
+		}
+		filterChain.doFilter(request, response);// to continue with remaining chain of spring sec filters
+
+	}
+
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\security\JwtUtils.java ====
+package com.app.security;
+
+import java.security.Key;
+import java.util.Collection;
+import java.util.Date;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import javax.annotation.PostConstruct;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.AuthorityUtils;
+import org.springframework.stereotype.Component;
+
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.security.Keys;
+import lombok.extern.slf4j.Slf4j;
+
+@Component
+@Slf4j
+public class JwtUtils {
+
+	@Value("${SECRET_KEY}")
+	private String jwtSecret;
+
+	@Value("${EXP_TIMEOUT}")
+	private int jwtExpirationMs;
+	
+	
+	private Key key;
+
+	@PostConstruct
+	public void init() {
+		key = Keys.hmacShaKeyFor(jwtSecret.getBytes());
+	}
+
+	// will be invoked by User controller : signin ) , upon successful
+	// authentication
+	public String generateJwtToken(Authentication authentication) {
+		log.info("generate jwt token " + authentication);
+		CustomUserDetails userPrincipal = (CustomUserDetails) authentication.getPrincipal();
+//JWT : userName,issued at ,exp date,digital signature(does not typically contain password , can contain authorities
+		return Jwts.builder() // JWTs : a Factory class , used to create JWT tokens
+				.setSubject((userPrincipal.getUsername())) // setting subject part of the token(typically user
+															// name/email)
+				.setIssuedAt(new Date())// Sets the JWT Claims iat (issued at) value of current date
+				.setExpiration(new Date((new Date()).getTime() + jwtExpirationMs))// Sets the JWT Claims exp
+																					// (expiration) value.
+				// setting a custom claim
+				.claim("authorities", getAuthoritiesInString(userPrincipal.getAuthorities()))
+				.signWith(key, SignatureAlgorithm.HS512) // Signs the constructed JWT using the specified
+															// algorithm with the specified key, producing a
+															// JWS(Json web signature=signed JWT)
+
+				// Using token signing algo : HMAC using SHA-512
+				.compact();// Actually builds the JWT and serializes it to a compact, URL-safe string
+	}
+
+	// this method will be invoked by our custom JWT filter
+	public String getUserNameFromJwtToken(Claims claims) {
+		return claims.getSubject();
+	}
+
+	// this method will be invoked by our custom filter
+	public Claims validateJwtToken(String jwtToken) {
+		// try {
+		Claims claims = Jwts.parserBuilder().setSigningKey(key).build().
+		// Sets the signing key used to verify JWT digital signature.
+				parseClaimsJws(jwtToken).getBody();// Parses the signed JWT returns the resulting Jws<Claims> instance
+		// throws exc in case of failures in verification
+		return claims;		
+	}
+	// Accepts Collection<GrantedAuthority> n rets comma separated list of it's
+	// string form
+
+	private String getAuthoritiesInString(Collection<? extends GrantedAuthority> authorities) {
+		String authorityString = authorities.stream().
+				map(authority -> authority.getAuthority())
+				.collect(Collectors.joining(","));
+		System.out.println(authorityString);
+		return authorityString;
+	}
+
+	public List<GrantedAuthority> getAuthoritiesFromClaims(Claims claims) {
+		String authString = (String) claims.get("authorities");
+		List<GrantedAuthority> authorities = AuthorityUtils.commaSeparatedStringToAuthorityList(authString);
+		authorities.forEach(System.out::println);
+		return authorities;
+	}
+
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\security\SecurityConfig.java ====
+package com.app.security;
+
+import java.util.Arrays;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+@EnableWebSecurity
+@Configuration
+@EnableGlobalMethodSecurity(prePostEnabled = true)
+public class SecurityConfig {
+
+	@Autowired
+	private PasswordEncoder enc;
+
+	@Autowired
+	private JwtAuthenticationFilter jwtFilter;
+
+	@Autowired
+	private CustomAuthenticationEntryPoint authEntry;
+
+	@Bean
+	public SecurityFilterChain authorizeRequests(HttpSecurity http) throws Exception {
+		http.cors().and().csrf().disable().exceptionHandling().authenticationEntryPoint(authEntry).and()
+				.authorizeRequests().antMatchers(
+						// user
+						"/user/signup", "/user/signin", "/password-reset/reset", "/password-reset/request","/user/{userId}",
+						// station
+						"/station/getstations", "/station/deletestation",
+						//route
+						"/route/allroutes",
+						// bus
+						"/bus/getbuses","/bus/getallbuses", 
+						//seats
+						"/seats/bus/{busId}",
+						"/seat/lock","/seat/unlock","/seat/{busid}",
+						//bookings
+						"/bookings/book","/bookings/getbookings/{userid}","/bookings/getbooking/{bookingId}","/bookings/getbookings",
+						//seatAllocation
+						"/passenger/bus/{busId}/seat-list",
+						//backendstatuscheck
+						"/check-backend-status",
+						"/payment/razorpay","/payment/verify-payment","/payment/refund",
+						//drivers
+						"/drivers/all",
+						//other
+						"/v*/api-doc*/**", "/swagger-ui/**")
+				.permitAll().antMatchers(HttpMethod.OPTIONS).permitAll().antMatchers("/products/add", "/drivers/add", "/drivers/update/**", "/drivers/delete/**").hasRole("ADMIN")
+				.anyRequest().authenticated().and().sessionManagement()
+				.sessionCreationPolicy(SessionCreationPolicy.STATELESS).and()
+				.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+		return http.build();
+	}
+
+	@Bean
+	public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+		return config.getAuthenticationManager();
+	}
+
+	@Bean
+	public CorsConfigurationSource corsConfigurationSource() {
+		CorsConfiguration configuration = new CorsConfiguration();
+		configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000","http://localhost:3001", "http://localhost:3002", "http://localhost:8081", "http://localhost:19006"));
+		configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+		configuration.setAllowedHeaders(Arrays.asList("*"));
+		configuration.setAllowCredentials(true);
+
+		UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+		source.registerCorsConfiguration("/**", configuration);
+		return source;
+	}
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\service\BookingService.java ====
+package com.app.service;
+
+import java.util.List;
+
+import com.app.dto.ApiResponse;
+import com.app.dto.BookingDetailsDto;
+import com.app.dto.BookingsDto;
+import com.app.dto.GetBookingDto;
+import com.app.dto.GetBookings;
+
+public interface BookingService {
+	
+	 ApiResponse addBooking(BookingsDto booking);
+	BookingDetailsDto getBookingDetails(long bookingId);
+	List<GetBookingDto> getAllUserBookings(long userid);
+	 ApiResponse cancelBookings(long bookingid);
+	List<GetBookings> getAllBookings();
+
+	byte[] generateFullReport();
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\service\BookingServiceImpl.java ====
+package com.app.service;
+
+import java.io.ByteArrayOutputStream;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import javax.transaction.Transactional;
+
+import com.app.dao.*;
+import com.itextpdf.text.*;
+import com.itextpdf.text.pdf.BaseFont;
+import com.itextpdf.text.pdf.PdfPCell;
+import com.itextpdf.text.pdf.PdfPTable;
+import com.itextpdf.text.pdf.PdfWriter;
+import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
+import org.springframework.stereotype.Service;
+
+import com.app.dto.ApiResponse;
+import com.app.dto.BookingDetailsDto;
+import com.app.dto.BookingsDto;
+import com.app.dto.GetBookingDto;
+import com.app.dto.GetBookings;
+import com.app.dto.PassengerDto;
+import com.app.dto.SeatPassengerDto;
+import com.app.entities.Bookings;
+import com.app.entities.Bus;
+import com.app.entities.Passenger;
+import com.app.entities.SeatAllocation;
+import com.app.entities.User;
+
+@Service
+@Transactional
+public class BookingServiceImpl implements BookingService {
+
+	@Autowired
+	private BookingsDao bookingDao;
+
+	@Autowired
+	private PassengerDao passengerDao;
+
+	@Autowired
+	private UserDao userDao;
+
+	@Autowired
+	private RouteDao routeDao;
+
+	@Autowired
+	private StationDao stationDao;
+
+	@Autowired
+	private BusDao busDao;
+
+	@Autowired
+	private SeatAllocationDao seatAllocationDao;
+
+	@Autowired
+	private ModelMapper modelMapper;
+
+	@Autowired
+	private DriverDao driverDao;
+
+
+	@Override
+	public ApiResponse addBooking(BookingsDto booking) {
+		try {
+
+			// Retrieve user and bus entities
+			User user = userDao.findById(booking.getUserId()).orElseThrow(() -> new RuntimeException("User Not found"));
+			Bus bus = busDao.findById(booking.getBusId()).orElseThrow(() -> new RuntimeException("Bus Not Found"));
+
+			// Create a new booking entity
+			Bookings newBooking = new Bookings();
+			
+			newBooking.setPaymentId(booking.getPaymentId());
+			newBooking.setRazorpayOrderId(booking.getRazorpayOrderId());
+			newBooking.setRazorpaySignature(booking.getRazorpaySignature());
+			newBooking.setBookingDateTime(LocalDateTime.now());
+			newBooking.setUser(user);
+			newBooking.setBus(bus);
+			newBooking.setFare(booking.getFare());
+
+			// Iterate through seat-passenger list to save passengers and validate seat
+			// allocations
+			for (SeatPassengerDto seatPassenger : booking.getSeatPassengerList()) {
+				int seatNo = seatPassenger.getSeatNo();
+				// Check if the seat is already allocated
+				boolean isSeatAllocated = seatAllocationDao.existsByBusAndSeatNo(bus, seatNo);
+				if (isSeatAllocated) {
+					return new ApiResponse("Seat " + seatNo + " is already allocated.", HttpStatus.BAD_REQUEST);
+				}
+				// Map DTO to entity for passenger
+				Passenger passenger = mapDtoToEntity(seatPassenger.getPassenger());
+				// Save the passenger entity
+				Passenger savedPassenger = passengerDao.save(passenger);
+
+				// Create seat allocation for the booking
+				SeatAllocation seatAllocation = new SeatAllocation();
+				seatAllocation.setSeatNo(seatNo);
+				seatAllocation.setPassenger(savedPassenger);
+				seatAllocation.setBooking(newBooking);
+				seatAllocation.setBus(bus);
+				// Add the seat allocation to the booking
+				newBooking.addSeat(seatAllocation);
+			}
+
+			// Save the new booking entity
+			Bookings savedBooking = bookingDao.save(newBooking);
+
+			// Check if the booking was successfully saved
+			if (savedBooking != null) {
+				return new ApiResponse("Booking Successful.", HttpStatus.CREATED,savedBooking.getId());
+			} else {
+				return new ApiResponse("Failed to add booking.", HttpStatus.INTERNAL_SERVER_ERROR);
+			}
+		} catch (ObjectOptimisticLockingFailureException ex) {
+			// Handle optimistic locking failure
+			return new ApiResponse(
+					"Optimistic locking failure: Another user has updated the booking. Please try again.",
+					HttpStatus.CONFLICT);
+
+		}
+	}
+
+	@Override
+	public List<GetBookingDto> getAllUserBookings(long userid) throws RuntimeException {
+		User user = userDao.findById(userid).orElseThrow(() -> new RuntimeException("User Not Found"));
+		List<Bookings> bookinglist = bookingDao.findByUser(user)
+				.orElseThrow(() -> new RuntimeException("No Bookings found"));
+
+		List<GetBookingDto> bookedDtoList = new ArrayList<GetBookingDto>();
+
+		for (Bookings booking : bookinglist) {
+
+			Bus bus = booking.getBus();
+			GetBookingDto bookingDto = new GetBookingDto();
+			bookingDto.setId(booking.getId());
+			bookingDto.setBusNo(bus.getBusNo());
+			bookingDto.setFrom(bus.getRoute().getStationIdBoarding().getStationName());
+			bookingDto.setTo(bus.getRoute().getStationIdDestination().getStationName());
+
+			bookingDto.setStartTime(bus.getStartTime());
+			bookingDto.setEndTime(bus.getEndTime());
+			bookingDto.setTotalFare(booking.getFare());
+			bookingDto.setBookingDateTime(booking.getBookingDateTime());
+			bookedDtoList.add(bookingDto);
+		}
+		return bookedDtoList;
+	}
+
+	@Override
+	public BookingDetailsDto getBookingDetails(long bookingId) {
+		// Retrieve booking entity by ID
+		Optional<Bookings> bookingOptional = bookingDao.findById(bookingId);
+
+		// Check if the booking exists
+		if (bookingOptional.isPresent()) {
+			// Map booking entity to BookingDetailsDto
+			Bookings booking = bookingOptional.get();
+			BookingDetailsDto bookingDto = new BookingDetailsDto();
+			bookingDto.setBusNo(booking.getBus().getBusNo());
+			bookingDto.setFrom(booking.getBus().getRoute().getStationIdBoarding().getStationName());
+			bookingDto.setTo(booking.getBus().getRoute().getStationIdDestination().getStationName());
+			bookingDto.setStartTime(booking.getBus().getStartTime());
+			bookingDto.setEndTime(booking.getBus().getEndTime());
+			bookingDto.setTotalFare(booking.getFare());
+			bookingDto.setBookingDateTime(booking.getBookingDateTime());
+
+			// Map seat-passenger list to SeatPassengerDto list
+			List<SeatAllocation> seatList = booking.getSeatList();
+			List<SeatPassengerDto> seatPassengerList = seatList.stream().map(seatAllocation -> {
+				SeatPassengerDto seatPassengerDto = new SeatPassengerDto();
+				seatPassengerDto.setSeatNo(seatAllocation.getSeatNo());
+				seatPassengerDto.setPassenger(mapEntityToDto(seatAllocation.getPassenger()));
+				return seatPassengerDto;
+			}).collect(Collectors.toList());
+
+			bookingDto.setSeatPassengerList(seatPassengerList);
+
+			return bookingDto;
+		} else {
+			return null; // Booking not found
+		}
+	}
+
+	private PassengerDto mapEntityToDto(Passenger passenger) {
+		PassengerDto passengerDto = new PassengerDto();
+		passengerDto.setFirstName(passenger.getFirstName());
+		passengerDto.setLastName(passenger.getLastName());
+		passengerDto.setGender(passenger.getGender());
+		passengerDto.setAge(passenger.getAge());
+		return passengerDto;
+	}
+
+	public Passenger mapDtoToEntity(PassengerDto passengerDto) {
+		return modelMapper.map(passengerDto, Passenger.class);
+	}
+
+
+	
+	
+	 public List<GetBookings> getAllBookings() {
+	        List<Bookings> bookings = bookingDao.findAll();
+	        return mapToGetBookings(bookings);
+	    }
+
+
+
+	public List<GetBookings> mapToGetBookings(List<Bookings> bookings) {
+	        return bookings.stream().map(this::mapToGetBooking).collect(Collectors.toList());
+	    }
+
+	    private GetBookings mapToGetBooking(Bookings booking) {
+	        GetBookings getBookings = new GetBookings();
+	        getBookings.setBookingId(booking.getId());
+	        getBookings.setPaymentId(booking.getPaymentId());
+	        getBookings.setRazorpayOrderId(booking.getRazorpayOrderId());
+	        getBookings.setRazorpaySignature(booking.getRazorpaySignature());
+	        getBookings.setBusNo(booking.getBus().getBusNo());
+	        getBookings.setBusId(booking.getBus().getId());
+	        getBookings.setTotalFare(booking.getFare());
+	        getBookings.setUserId(booking.getUser().getId());
+	        getBookings.setUserName(booking.getUser().getEmail());
+	        getBookings.setBookingDateTime(booking.getBookingDateTime());
+	        getBookings.setNoOfSeats(booking.getSeatList().size());
+	        return getBookings;
+	    }
+	
+	
+	
+	
+	
+	@Override
+	public ApiResponse cancelBookings(long bookingid) {
+		try {
+            // Retrieve booking entity by ID
+            Optional<Bookings> bookingOptional = bookingDao.findById(bookingid);
+
+            // Check if the booking exists
+            if (bookingOptional.isPresent()) {
+                Bookings booking = bookingOptional.get();
+
+                // Delete the booking and associated seat allocations
+                bookingDao.delete(booking);
+
+                return new ApiResponse("Booking deleted successfully.", HttpStatus.OK);
+            } else {
+                return new ApiResponse("Booking not found.", HttpStatus.NOT_FOUND);
+            }
+        } catch (ObjectOptimisticLockingFailureException ex) {
+            // Handle optimistic locking failure
+            return new ApiResponse(
+                    "Optimistic locking failure: Another user has updated the booking. Please try again.",
+                    HttpStatus.CONFLICT);
+        } catch (Exception ex) {
+            return new ApiResponse("Failed to delete booking.", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+	}
+
+	@Override
+	public byte[] generateFullReport() {
+		try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+			Document document = new Document();
+			PdfWriter.getInstance(document, baos);
+			document.open();
+
+			// Загружаем шрифт с поддержкой кириллицы
+			BaseFont bf = BaseFont.createFont("fonts/arial.ttf", BaseFont.IDENTITY_H, BaseFont.EMBEDDED);
+			Font font = new Font(bf, 12, Font.NORMAL);
+			Font fontBold = new Font(bf, 20, Font.BOLD);
+
+			document.add(new Paragraph("Отчёт по системе бронирования", fontBold));
+			document.add(Chunk.NEWLINE);
+
+			document.add(new Paragraph("1. Общая информация:", font));
+			document.add(new Paragraph("Всего пользователей: " + userDao.count(), font));
+			document.add(new Paragraph("Всего автобусов: " + busDao.count(), font));
+			document.add(new Paragraph("Всего бронирований: " + bookingDao.count(), font));
+
+			document.add(new Paragraph("\n", font));
+
+			// Таблица для водителей с заработком и часами
+			PdfPTable driverTable = new PdfPTable(6);
+			driverTable.setWidthPercentage(100);
+			addTableHeader(driverTable, new String[]{"ФИО", "Лицензия", "Автобус", "Телефон", "Доход за период", "Отработано часов"}, font);
+
+			driverDao.findAll().forEach(driver -> {
+				double earnings = bookingDao.findByDriverId(driver.getId())
+						.stream().mapToDouble(Bookings::getFare).sum();
+
+				long totalHours = busDao.findByDriverId(driver.getId())
+						.stream().mapToLong(bus -> Duration.between(bus.getStartTime(), bus.getEndTime()).toHours()).sum();
+
+				addTableRow(driverTable, new String[]{
+						driver.getFirstName() + " " + driver.getLastName(),
+						driver.getLicenseNumber(),
+						driver.getBuses() != null && !driver.getBuses().isEmpty()
+								? driver.getBuses().stream().map(Bus::getBusNo).collect(Collectors.joining(", "))
+								: "Без автобуса",
+						driver.getPhoneNumber(),
+						String.valueOf(earnings),
+						String.valueOf(totalHours)
+				}, font);
+			});
+
+			document.add(new Paragraph("Водители и заработок:", font));
+			document.add(new Paragraph("\n", font));
+			document.add(driverTable);
+
+			document.add(new Paragraph("\n", font));
+
+			// Таблица для автобусов и пройденного расстояния
+			PdfPTable busTable = new PdfPTable(3);
+			busTable.setWidthPercentage(150);
+			addTableHeader(busTable, new String[]{"Номер автобуса", "Маршрут", "Общий километраж"}, font);
+
+			busDao.findAll().forEach(bus -> {
+				int trips = bookingDao.countTripsByBusId(bus.getId());
+				double distance = bus.getRoute().getDistance();
+				addTableRow(busTable, new String[]{
+						bus.getBusNo(),
+						bus.getRoute().getStationIdBoarding().getStationName() + " - " + bus.getRoute().getStationIdDestination().getStationName(),
+						String.valueOf(trips * distance)
+				}, font);
+			});
+
+			document.add(new Paragraph("Автобусы и километраж:", font));
+			document.add(new Paragraph("\n", font));
+			document.add(busTable);
+
+			document.close();
+			return baos.toByteArray();
+
+		} catch (Exception e) {
+			throw new RuntimeException("Failed to generate report: " + e.getMessage(), e);
+		}
+	}
+
+	/**
+	 * Метод для добавления заголовков в таблицу
+	 */
+	private void addTableHeader(PdfPTable table, String[] headers, Font font) {
+		for (String header : headers) {
+			PdfPCell cell = new PdfPCell(new Phrase(header, font));
+			cell.setBackgroundColor(BaseColor.LIGHT_GRAY);
+			cell.setHorizontalAlignment(Element.ALIGN_CENTER);
+			table.addCell(cell);
+		}
+	}
+
+	/**
+	 * Метод для добавления строк в таблицу
+	 */
+	private void addTableRow(PdfPTable table, String[] data, Font font) {
+		for (String value : data) {
+			PdfPCell cell = new PdfPCell(new Phrase(value, font));
+			cell.setHorizontalAlignment(Element.ALIGN_CENTER);
+			table.addCell(cell);
+		}
+	}
+
+
+}
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\service\BusScheduleService.java ====
+package com.app.service;
+
+import com.app.dao.BusDao;
+import com.app.dao.BusScheduleDao;
+import com.app.entities.Bus;
+import com.app.entities.BusSchedule;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+@Service
+public class BusScheduleService {
+
+    @Autowired
+    private BusScheduleDao scheduleDao;
+    @Autowired
+    private BusDao busDao;
+
+    public BusSchedule addSchedule(Long busId, BusSchedule schedule) {
+        Bus bus = busDao.findById(busId)
+                .orElseThrow(() -> new RuntimeException("Bus not found"));
+        schedule.setBus(bus);
+        return scheduleDao.save(schedule);
+    }
+
+    public List<BusSchedule> getSchedulesForBus(Long busId) {
+        // Простейший способ: получить все и отфильтровать
+        // (или сделать метод в репозитории, если нужно).
+        return scheduleDao.findAll().stream()
+                .filter(s -> s.getBus().getId().equals(busId))
+                .toList();
+    }
+
+    public void deleteSchedule(Long scheduleId) {
+        scheduleDao.deleteById(scheduleId);
+    }
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\service\BusService.java ====
+package com.app.service;
+
+import java.util.List;
+
+import org.springframework.http.ResponseEntity;
+
+import com.app.dto.ApiResponse;
+import com.app.dto.BusDto2;
+import com.app.dto.GetBusDto;
+import com.app.dto.SendBusDto;
+import com.app.entities.Bus;
+
+public interface BusService {
+
+	Bus getBusById(long busId);
+
+	ApiResponse addBus(Bus bus, long routeId, Long driverId); // Обновлено: добавлен driverId
+
+	List<SendBusDto> getBuses(GetBusDto gbd);
+
+	List<SendBusDto> getAllBuses();
+
+	boolean updateBus(long busId, BusDto2 bus, Long driverId); // Обновлено: добавлен driverId
+
+	ResponseEntity<?> removeBus(long busId);
+	
+
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\service\BusSeviceImpl.java ====
+package com.app.service;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import javax.transaction.Transactional;
+
+import com.app.dao.DriverDao;
+import com.app.entities.Driver;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+
+import com.app.dao.BusDao;
+import com.app.dao.RouteDao;
+import com.app.dao.StationDao;
+import com.app.dto.ApiResponse;
+import com.app.dto.BusDto2;
+import com.app.dto.GetBusDto;
+import com.app.dto.SendBusDto;
+import com.app.entities.Bus;
+import com.app.entities.Routes;
+import com.app.entities.Station;
+
+@Service
+@Transactional
+public class BusSeviceImpl implements BusService {
+	
+	@Autowired
+	private BusDao busDao;
+	
+	
+	@Autowired
+	private RouteDao routeDao;
+	
+	@Autowired
+	private StationDao stationDao;
+
+	@Autowired
+	private DriverDao driverDao;
+	
+	@Override
+	public Bus getBusById(long busId) {
+        return busDao.findById(busId)
+                .orElse(null); // Returns null if bus is not found
+    }
+
+
+	@Override
+	public ApiResponse addBus(Bus bus, long routeId, Long driverId) {
+		Routes route = routeDao.findById(routeId)
+				.orElseThrow(() -> new RuntimeException("Route not found."));
+		if (busDao.existsByBusNo(bus.getBusNo())) {
+			throw new RuntimeException("Duplicate bus found.");
+		}
+		if (driverId != null) {
+			Driver driver = driverDao.findById(driverId)
+					.orElseThrow(() -> new RuntimeException("Driver not found."));
+			bus.setDriver(driver);
+		}
+		route.addBus(bus);
+		routeDao.save(route);
+		return new ApiResponse("Bus added.", HttpStatus.CREATED);
+	}
+
+
+	@Override
+	public ResponseEntity<?> removeBus(long busId) {
+	    try {
+	        Optional<Bus> optionalBus = busDao.findById(busId);
+	        if (optionalBus.isPresent()) {
+	            Bus bus = optionalBus.get();
+	            busDao.delete(bus);
+	            return new ResponseEntity<>("Bus removed successfully", HttpStatus.OK);
+	        } else {
+	            return new ResponseEntity<>("Bus not found", HttpStatus.NOT_FOUND);
+	        }
+	    } catch (Exception e) {
+	        e.printStackTrace();
+	        return new ResponseEntity<>("Failed to remove bus", HttpStatus.INTERNAL_SERVER_ERROR);
+	    }
+	}
+
+	
+	@Override
+	public List<SendBusDto> getBuses(GetBusDto getBusInput) {
+	    // Get all routes
+	    List<Routes> allRoutes = routeDao.findAll();
+	    // Get from station
+	    Station from = stationDao.findById(getBusInput.getFrom())
+	            .orElseThrow(() -> new RuntimeException("Start Station not found."));
+	    // Get to station
+	    Station to = stationDao.findById(getBusInput.getTo())
+	            .orElseThrow(() -> new RuntimeException("Destination Station not found."));
+	    // Find route (which includes from -> to)
+	    List<Routes> matchingRoutes = allRoutes.stream()
+	            .filter(e -> e.getStationIdBoarding() == from && e.getStationIdDestination() == to)
+	            .collect(Collectors.toList());
+
+	    if (matchingRoutes.isEmpty()) {
+	        // No routes found between the specified stations
+	        return List.of();
+	    }
+
+	    Routes route = matchingRoutes.get(0);
+
+	    // Get the list of buses from the route
+	    List<Bus> buses = route.getBuses();
+
+	    // Filter buses based on the provided date
+	    List<Bus> filteredBuses = buses.stream()
+	            .filter(bus -> bus.getStartTime().toLocalDate().isEqual(getBusInput.getDate()))
+	            .collect(Collectors.toList());
+	    // Prepare and return the list of SendBusDto objects
+	    return filteredBuses.stream()
+	            .map(bus -> {
+	                int cost = (int) route.getDistance() * 1000;
+	                double duration = (double) route.getDistance() * 1.5;
+	                String durationString = duration >= 60 ? (duration / 60) + "hr" : duration + "min";
+	                String busNo=bus.getBusNo();
+	                String fromName = from.getStationName();
+	                String toName = to.getStationName();
+	                LocalDateTime startTime= bus.getStartTime();
+	                LocalDateTime endTime=bus.getEndTime();
+					Driver driver = bus.getDriver();
+					Long driverId = null;
+
+					if (driver != null) {
+						driverId = driver.getId();
+					}
+	                return new SendBusDto(bus.getId(),busNo, fromName, toName, cost, durationString, startTime, endTime,driverId, bus.getBusClass());
+	            })
+	            .collect(Collectors.toList());
+	}
+
+	public List<SendBusDto> getAllBuses() {
+	    // Retrieve all buses
+	    List<Bus> buses = busDao.findAll();
+
+	    // Prepare and return the list of SendBusDto objects
+	    return buses.stream()
+	            .map(bus -> {
+	                // Assuming the route information is available in the Bus entity
+	                Routes route = bus.getRoute();
+	                if (route == null) {
+	                    // If the route information is not available, handle it accordingly
+	                    throw new RuntimeException("Route information not available for bus with ID: " + bus.getId());
+	                }
+	                int cost = (int) route.getDistance() * 2;
+	                double duration = (double) route.getDistance() * 1.5;
+	                String durationString = duration >= 60 ? (duration / 60) + "hr" : duration + "min";
+	                String busNo=bus.getBusNo();
+	                Station from = route.getStationIdBoarding();
+	                Station to = route.getStationIdDestination();
+	                String fromName = from != null ? from.getStationName() : "Unknown";
+	                String toName = to != null ? to.getStationName() : "Unknown";
+	                LocalDateTime startTime= bus.getStartTime();
+	                LocalDateTime endTime=bus.getEndTime();
+					Driver driver = bus.getDriver();
+					Long driverId = null;
+					if (driver != null) {
+						driverId = driver.getId();
+					}
+	                return new SendBusDto(bus.getId(), busNo , fromName, toName, cost, durationString, startTime, endTime, driverId, bus.getBusClass());
+	            })
+	            .collect(Collectors.toList());
+	}
+
+
+	@Override
+	public boolean updateBus(long busId, BusDto2 busDto, Long driverId) {
+		Optional<Bus> optionalBus = busDao.findById(busId);
+		if (optionalBus.isPresent()) {
+			Bus existingBus = optionalBus.get();
+			existingBus.setBusNo(busDto.getBusNo());
+			if (driverId != null) {
+				Driver driver = driverDao.findById(driverId)
+						.orElseThrow(() -> new RuntimeException("Driver not found."));
+				existingBus.setDriver(driver);
+			}
+			busDao.save(existingBus);
+			return true;
+		} else {
+			return false;
+		}
+	}
+	
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\service\DriverService.java ====
+package com.app.service;
+
+import java.util.List;
+import com.app.dto.ApiResponse;
+import com.app.dto.DriverDto;
+import com.app.entities.Driver;
+
+public interface DriverService {
+    ApiResponse addDriver(DriverDto driverDto);
+    ApiResponse updateDriver(Long driverId, DriverDto driverDto);
+    ApiResponse deleteDriver(Long driverId);
+    List<DriverDto> getAllDrivers();
+    Driver getDriverById(Long driverId);
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\service\DriverServiceImpl.java ====
+package com.app.service;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+import javax.transaction.Transactional;
+
+import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+
+import com.app.dao.DriverDao;
+import com.app.dto.ApiResponse;
+import com.app.dto.DriverDto;
+import com.app.entities.Driver;
+
+@Service
+@Transactional
+public class DriverServiceImpl implements DriverService {
+
+    @Autowired
+    private DriverDao driverDao;
+
+    @Autowired
+    private ModelMapper mapper;
+
+    @Override
+    public ApiResponse addDriver(DriverDto driverDto) {
+        if (driverDao.existsByLicenseNumber(driverDto.getLicenseNumber())) {
+            return new ApiResponse("Driver with this license number already exists.", HttpStatus.BAD_REQUEST);
+        }
+        Driver driver = mapper.map(driverDto, Driver.class);
+        driverDao.save(driver);
+        return new ApiResponse("Driver added successfully", HttpStatus.CREATED);
+    }
+
+    @Override
+    public ApiResponse updateDriver(Long driverId, DriverDto driverDto) {
+        Driver existingDriver = driverDao.findById(driverId)
+                .orElseThrow(() -> new RuntimeException("Driver not found."));
+        // Если номер лицензии меняется, проверяем, нет ли конфликтов
+        if (!existingDriver.getLicenseNumber().equals(driverDto.getLicenseNumber())
+                && driverDao.existsByLicenseNumber(driverDto.getLicenseNumber())) {
+            return new ApiResponse("License number already in use by another driver.", HttpStatus.BAD_REQUEST);
+        }
+        // С помощью ModelMapper копируем поля из DTO в найденную сущность
+        mapper.map(driverDto, existingDriver);
+        driverDao.save(existingDriver);
+        return new ApiResponse("Driver updated successfully");
+    }
+
+    @Override
+    public ApiResponse deleteDriver(Long driverId) {
+        Driver driver = driverDao.findById(driverId)
+                .orElseThrow(() -> new RuntimeException("Driver not found."));
+        driverDao.delete(driver);
+        return new ApiResponse("Driver deleted successfully");
+    }
+
+    @Override
+    public List<DriverDto> getAllDrivers() {
+        return driverDao.findAll().stream()
+                .map(driver -> new DriverDto(
+                        driver.getId(),
+                        driver.getFirstName(),
+                        driver.getLastName(),
+                        driver.getLicenseNumber(),
+                        driver.getPhoneNumber(),
+                        driver.getSalary()
+                ))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public Driver getDriverById(Long driverId) {
+        return driverDao.findById(driverId)
+                .orElseThrow(() -> new RuntimeException("Driver not found."));
+    }
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\service\EmailService.java ====
+package com.app.service;
+
+import javax.mail.MessagingException;
+import javax.mail.internet.MimeMessage;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.stereotype.Service;
+
+import com.app.entities.User;
+
+@Service
+public class EmailService {
+
+	 @Value("${api.basePath}")
+	    private String basePath;
+
+    @Autowired
+    private JavaMailSender emailSender;
+
+    public void sendEmail(String to, String subject, String text) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setTo(to);
+        message.setSubject(subject);
+        message.setText(text);
+        emailSender.send(message);
+    }
+    public void sendPasswordResetEmail(User user, String token) {
+        MimeMessage message = emailSender.createMimeMessage();
+        
+        try {
+        	MimeMessageHelper helper = new MimeMessageHelper(message,true);
+            helper.setTo(user.getEmail());
+            helper.setSubject("Password Reset Request");
+            String emailContent = getEmailContent(user.getFirstName()+" "+user.getLastName(), token);
+            helper.setText(emailContent, true);
+            helper.addInline("logo", new ClassPathResource("images/logo.png"));
+            emailSender.send(message);
+        } catch (MessagingException e) {
+            // Handle exception
+            e.printStackTrace();
+        }
+    }
+    private String getEmailContent(String username, String token) {
+        
+        String resetUrl = basePath + "/reset-password?token=" + token;
+
+        return "<html><head><style>" +
+        "body { font-family: Arial, sans-serif; }" +
+        ".container { max-width: 600px; margin: 0 auto; padding: 20px; }" +
+        ".logo { text-align: center; }" +
+        ".content { margin-top: 20px; }" +
+        ".reset-button { display: inline-block; background-color: #007bff; color: #ffffff; text-decoration: none; padding: 10px 20px; border-radius: 5px; }" +
+        "</style></head><body>" +
+        "<div class='container'>" +
+        "<div class='logo'><img src='cid:logo' alt='Logo' style='width: 100px; height: auto;'></div>" +
+        "<div class='content'>" +
+        "<p>Dear " + username + ",</p>" +
+        "<p>We received a request to reset your password. Click the button below to reset it:</p>" +
+        "<p><a href='" + resetUrl + "' class='reset-button'>Reset Password</a></p>" +
+        "<p>If you did not request a password reset, please ignore this email.</p>" +
+        "<p>Best regards,<br/>Dimash Bus Booking Team</p>" +
+        "</div></div></body></html>";
+    }
+}
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\service\PasswordResetService.java ====
+package com.app.service;
+
+import java.util.Date;
+import java.util.UUID;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.app.dao.PasswordResetTokenRepository;
+import com.app.entities.PasswordResetToken;
+import com.app.entities.User;
+
+@Service
+public class PasswordResetService {
+
+	 private static final long RESET_TOKEN_EXPIRATION = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+    @Autowired
+    private PasswordResetTokenRepository tokenRepository;
+
+    @Autowired
+    private EmailService emailService;
+
+    @Transactional
+    public void createPasswordResetTokenForUser(User user) {
+        String token = UUID.randomUUID().toString();
+        PasswordResetToken resetToken = new PasswordResetToken();
+        resetToken.setToken(token);
+        resetToken.setUser(user);
+        resetToken.setExpiryDate(new Date(System.currentTimeMillis() + RESET_TOKEN_EXPIRATION));
+        tokenRepository.save(resetToken);
+        emailService.sendPasswordResetEmail(user, token);
+    }
+
+    @Transactional(readOnly = true)
+    public PasswordResetToken findByToken(String token) {
+        return tokenRepository.findByToken(token);
+    }
+
+    @Transactional
+    public void deleteToken(PasswordResetToken token) {
+        tokenRepository.delete(token);
+    }
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\service\PaymentService.java ====
+package com.app.service;
+
+public interface PaymentService {
+
+	boolean initiateRefund(String paymentId,double amount, String reason);
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\service\PaymentServiceImpl.java ====
+package com.app.service;
+
+import org.json.JSONObject;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
+import com.razorpay.Payment;
+import com.razorpay.RazorpayClient;
+import com.razorpay.RazorpayException;
+import com.razorpay.Refund;
+
+@Service
+public class PaymentServiceImpl implements PaymentService {
+
+	@Value("${razorpay.key.id}")
+	private String RAZORPAY_KEY_ID;
+	@Value("${razorpay.key.secret}")
+	private String RAZORPAY_KEY_SECRET;
+
+	public boolean initiateRefund(String paymentId,double amount, String reason) {
+        
+//		 try {
+//	            // Create an instance of the Razorpay client
+//	            RazorpayClient razorpay = new RazorpayClient(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET);
+//
+//	            // Prepare the refund request payload
+//	            JSONObject refundRequest = new JSONObject();
+//	            refundRequest.put("amount", amount);
+//	            refundRequest.put("speed", "optimum");
+//	            refundRequest.put("reason", reason);
+//	            //refundRequest.put("receipt", "Receipt No. #31");
+//
+//	            // Call the refund method
+//	            Refund payment = razorpay.payments.refund(paymentId, refundRequest);
+//
+//	            // Check if refund was successful
+//	            JSONObject response = payment.toJson();
+//	            if (response.has("id")) {
+//	                // Refund was successful
+//	                System.out.println("Refund initiated successfully: " + response);
+//	                return true;
+//	                // Handle success response
+//	            } else {
+//	                // Refund failed
+//	                JSONObject error = response.getJSONObject("error");
+//	                System.out.println("Error initiating refund: " + error.getString("description"));
+//	                return false;
+//	                // Handle failure response
+//	            }
+			 return true;
+//	        } catch (RazorpayException e) {
+//	            // Handle Razorpay API exception
+//	            System.out.println("Error initiating refund: " + e.getMessage());
+//	            return false;
+//	        }
+    }
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\service\RouteSegmentService.java ====
+package com.app.service;
+
+import com.app.dao.RouteDao;
+import com.app.dao.RouteSegmentDao;
+import com.app.dao.StationDao;
+import com.app.entities.RouteSegment;
+import com.app.entities.Routes;
+import com.app.entities.Station;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+@Service
+public class RouteSegmentService {
+
+    @Autowired
+    private RouteSegmentDao segmentDao;
+
+    @Autowired
+    private RouteDao routeDao;
+
+    @Autowired
+    private StationDao stationDao;
+
+    public RouteSegment addSegment(Long routeId, Long stationId, RouteSegment segment) {
+        Routes route = routeDao.findById(routeId)
+                .orElseThrow(() -> new RuntimeException("Route not found"));
+        Station st = stationDao.findById(stationId)
+                .orElseThrow(() -> new RuntimeException("Station not found"));
+
+        segment.setRoute(route);
+        segment.setStation(st);
+
+        return segmentDao.save(segment);
+    }
+
+    public void deleteSegment(Long segmentId) {
+        segmentDao.deleteById(segmentId);
+    }
+
+    // и т.д. (обновление, поиск и пр.)
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\service\RouteService.java ====
+package com.app.service;
+
+import java.util.List;
+
+import com.app.dto.AddRouteDto;
+import com.app.dto.ApiResponse;
+import com.app.dto.GetRouteResp;
+
+public interface RouteService {
+	
+	ApiResponse addRoute(AddRouteDto ard);
+	ApiResponse deleteRoute(long routeid);
+	ApiResponse updateRoute(long routeId, AddRouteDto routeDto);
+	List<GetRouteResp> getRoutes();
+
+}
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\service\RouteServiceImpl.java ====
+package com.app.service;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.transaction.Transactional;
+
+import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.app.dao.RouteDao;
+import com.app.dao.StationDao;
+import com.app.dto.AddRouteDto;
+import com.app.dto.ApiResponse;
+import com.app.dto.GetRouteResp;
+import com.app.entities.Routes;
+import com.app.entities.Station;
+
+@Service
+@Transactional
+public class RouteServiceImpl implements RouteService {
+
+	@Autowired
+	private StationDao stationDao;
+	
+	@Autowired
+	private RouteDao routeDao;
+	
+	@Autowired
+	private ModelMapper mapper;
+
+	@Override
+	public ApiResponse addRoute(AddRouteDto ard) {
+	    // Find the stations for the given IDs
+	    Station from = stationDao.findById(ard.getStationIdFrom())
+	            .orElseThrow(() -> new RuntimeException("Boarding station not found."));
+
+	    Station to = stationDao.findById(ard.getStationIdTo())
+	            .orElseThrow(() -> new RuntimeException("Destination station not found."));
+
+	    // Check if a similar route already exists
+	    if (routeDao.existsByStationIdBoardingAndStationIdDestinationAndDistance(from, to, ard.getDistance())) {
+	        throw new RuntimeException("Duplicate route found.");
+	    }
+
+	    // Create a new route object and save it
+	    Routes route = new Routes();
+	    route.setStationIdBoarding(from);
+	    route.setStationIdDestination(to);
+	    route.setDistance(ard.getDistance());
+
+	    Routes savedRoute = routeDao.save(route);
+
+	    return new ApiResponse("Route Added");
+	}
+
+
+
+	@Override
+	public ApiResponse deleteRoute(long routeid) {
+		routeDao.deleteById(routeid);
+		return new ApiResponse("Route Deleted Successfully");
+	}
+
+	@Override
+	public List<GetRouteResp> getRoutes() {
+		List<GetRouteResp> l=new ArrayList<GetRouteResp>();
+		List<Routes> list=routeDao.findAll();
+		for(Routes a:list)
+		{
+			GetRouteResp g=new GetRouteResp();
+			g.setDistance(a.getDistance());
+			g.setId(a.getId());
+			Station boarding=stationDao.findById(a.getStationIdBoarding().getId()).orElseThrow(()->new RuntimeException("Station Boarding Not Found"));
+			Station destination=stationDao.findById(a.getStationIdDestination().getId()).orElseThrow(()->new RuntimeException("Station Destination Not Found"));
+            g.setFrom(boarding.getStationName());
+            g.setTo(destination.getStationName());
+            g.setFromId(boarding.getId());
+            g.setToId(destination.getId());
+            l.add(g);
+
+			//l.add(mapper.map(a, GetRouteResp.class));
+		}
+		return l;
+	}
+	@Override
+	public ApiResponse updateRoute(long routeId, AddRouteDto routeDto) {
+	    // Find the route by its ID
+	    Routes existingRoute = routeDao.findById(routeId)
+	            .orElseThrow(() -> new RuntimeException("Route not found"));
+
+	    // Find the stations for the given IDs
+	    Station from = stationDao.findById(routeDto.getStationIdFrom())
+	            .orElseThrow(() -> new RuntimeException("Boarding station not found."));
+
+	    Station to = stationDao.findById(routeDto.getStationIdTo())
+	            .orElseThrow(() -> new RuntimeException("Destination station not found."));
+
+	    // Update the existing route details
+	    existingRoute.setStationIdBoarding(from);
+	    existingRoute.setStationIdDestination(to);
+	    existingRoute.setDistance(routeDto.getDistance());
+
+	    // Save the updated route
+	    Routes updatedRoute = routeDao.save(existingRoute);
+
+	    return new ApiResponse("Route updated successfully");
+	}
+
+
+}
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\service\SeatAllocationImpl.java ====
+package com.app.service;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import javax.transaction.Transactional;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.app.dao.BusDao;
+import com.app.dao.SeatAllocationDao;
+import com.app.dto.BusSeatBookings;
+import com.app.dto.SeatNoAndPassengerDto;
+import com.app.entities.Bus;
+import com.app.entities.Passenger;
+import com.app.entities.Routes;
+import com.app.entities.SeatAllocation;
+
+@Service
+@Transactional
+public class SeatAllocationImpl implements SeatAllocationService{
+
+	@Autowired
+	private SeatAllocationDao seatAllocationDao;
+	
+	@Autowired
+	private BusDao busDao;
+	
+	public List<Integer> getSeatNumbersByBus(long busId) {
+        // Retrieve seat numbers by bus ID from the repository
+        List<SeatAllocation> seatAllocations = seatAllocationDao.findByBusId(busId);
+        
+        // Extract seat numbers from seat allocations
+        List<Integer> seatNumbers = seatAllocations.stream()
+                .map(SeatAllocation::getSeatNo)
+                .collect(Collectors.toList());
+        
+        return seatNumbers;
+    }
+
+	public BusSeatBookings getPassengerListWithSeatNoForBus(long busId) {
+	    List<SeatAllocation> seatAllocations = seatAllocationDao.findByBusId(busId);
+	    Bus bus = busDao.findById(busId).orElseThrow(()->new RuntimeException("Bus Not Found")); // Fetch bus information
+
+	    BusSeatBookings busSeatBookings = new BusSeatBookings();
+	    busSeatBookings.setBusNo(bus.getBusNo());
+	    busSeatBookings.setTotalSeats(bus.getTotalSeats());
+	    busSeatBookings.setStartTime(bus.getStartTime());
+	    busSeatBookings.setEndTime(bus.getEndTime());
+
+	    Routes route = bus.getRoute();
+	    busSeatBookings.setFrom(route.getStationIdBoarding().getStationName());
+	    busSeatBookings.setTo(route.getStationIdDestination().getStationName());
+
+	    List<SeatNoAndPassengerDto> seatNoAndPassengerDtoList = new ArrayList<>();
+
+	    for (SeatAllocation seatAllocation : seatAllocations) {
+	        Passenger passenger = seatAllocation.getPassenger();
+//	        passenger.setMobileNo(user.getMobile());
+	        int seatNo = seatAllocation.getSeatNo();
+	        
+	        seatNoAndPassengerDtoList.add(new SeatNoAndPassengerDto(seatNo, passenger));
+	    }
+
+	    busSeatBookings.setSeatList(seatNoAndPassengerDtoList);
+
+	    return busSeatBookings;
+	}
+
+	
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\service\SeatAllocationService.java ====
+package com.app.service;
+
+import java.util.List;
+
+import com.app.dto.BusSeatBookings;
+
+public interface SeatAllocationService {
+
+//	public ApiResponse allocateSeat(SeatAllocationRequestDto seat) ;
+	List<Integer> getSeatNumbersByBus(long busId);	
+	BusSeatBookings getPassengerListWithSeatNoForBus(long busId);
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\service\SeatCleanupTask.java ====
+package com.app.service;
+
+import java.time.LocalDateTime;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
+import javax.annotation.PostConstruct;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+@Component
+public class SeatCleanupTask {
+
+	// Define the executor service
+	private final ScheduledExecutorService executorService = Executors.newScheduledThreadPool(1);
+
+	@Autowired
+	private SeatService seatService;
+
+//	@PostConstruct
+//	public void startSeatCleanupTask() {
+//		
+//		// Schedule the cleanup task to run every 1 minutes
+//		executorService.scheduleAtFixedRate(() -> {
+//			System.out.println("CleanUp seat Task Running" + LocalDateTime.now());
+//			// Execute your database cleanup logic here
+//			seatService.seatCleanup();
+//		}, 0, 1, TimeUnit.SECONDS);
+//	}
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\service\SeatService.java ====
+package com.app.service;
+
+import java.util.List;
+
+import com.app.dto.SeatDto;
+import com.app.entities.Seat;
+
+public interface SeatService {
+
+	boolean lockSeat(SeatDto seat);
+	List<Integer> getAllSeatsForBus(Long busId);
+	boolean unlockSeat(SeatDto seat );
+	void seatCleanup();
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\service\SeatServiceImpl.java ====
+package com.app.service;
+import java.time.LocalDateTime;
+import java.util.Iterator;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import javax.transaction.Transactional;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
+
+import com.app.dao.BusDao;
+import com.app.dao.SeatDao;
+import com.app.dto.SeatDto;
+import com.app.entities.Bus;
+import com.app.entities.Seat;
+import com.app.entities.SeatWithTimeStamp;
+
+@Service
+@Transactional
+public class SeatServiceImpl implements SeatService {
+
+    @Autowired
+    private SeatDao seatDao;
+
+    @Autowired
+    private BusDao busDao;
+
+    @Override
+    public boolean lockSeat(SeatDto seatDto) {
+        try {
+            Bus bus = busDao.findById(seatDto.getBusId())
+                    .orElseThrow(() -> new RuntimeException("Bus Not Found"));
+
+            Seat existingSeat = seatDao.findByBusId(seatDto.getBusId());
+            if (existingSeat != null) {
+                List<SeatWithTimeStamp> seatsWithTimeStamp = seatDto.getSeatNos().stream()
+                        .map(seatNo -> {
+                            SeatWithTimeStamp seatWithTimeStamp = new SeatWithTimeStamp();
+                            seatWithTimeStamp.setSeatNo(seatNo);
+                            seatWithTimeStamp.setTimestamp(LocalDateTime.now());
+                            return seatWithTimeStamp;
+                        }).collect(Collectors.toList());
+
+                existingSeat.getSeats().addAll(seatsWithTimeStamp);
+                seatDao.save(existingSeat);
+                return true;
+            } else {
+                Seat newSeat = new Seat();
+                newSeat.setBus(bus);
+                List<SeatWithTimeStamp> seatsWithTimeStamp = seatDto.getSeatNos().stream()
+                        .map(seatNo -> {
+                            SeatWithTimeStamp seatWithTimeStamp = new SeatWithTimeStamp();
+                            seatWithTimeStamp.setSeatNo(seatNo);
+                            seatWithTimeStamp.setTimestamp(LocalDateTime.now());
+                            return seatWithTimeStamp;
+                        }).collect(Collectors.toList());
+                newSeat.setSeats(seatsWithTimeStamp);
+                seatDao.save(newSeat);
+                return true;
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+
+    @Override
+    public List<Integer> getAllSeatsForBus(Long busId) {
+        List<Seat> seats = seatDao.findSeatByBusId(busId);
+        return seats.stream()
+                .flatMap(seat -> seat.getSeats().stream())
+                .map(SeatWithTimeStamp::getSeatNo)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public boolean unlockSeat(SeatDto seatDto) {
+        try {
+            Seat seat = seatDao.findByBusId(seatDto.getBusId());
+            if (seat != null) {
+                List<Integer> seatNosToRemove = seatDto.getSeatNos();
+                
+                // Remove the SeatWithTimeStamp entities from the collection
+                Iterator<SeatWithTimeStamp> iterator = seat.getSeats().iterator();
+                while (iterator.hasNext()) {
+                    SeatWithTimeStamp seatWithTimeStamp = iterator.next();
+                    if (seatNosToRemove.contains(seatWithTimeStamp.getSeatNo())) {
+                        iterator.remove();
+                    }
+                }
+
+                seatDao.save(seat);
+                return true;
+            } else {
+                return false; // No seat entry found for the provided busId
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false; // Handle exceptions
+        }
+    }
+
+
+   
+
+    @Override
+    @Scheduled(fixedRate = 60000) // 300000 milliseconds = 5 minutes
+    public void seatCleanup() {
+    	System.out.println("////////////////////In SEat Cleanup/////////////////////");
+        try {
+            LocalDateTime currentTime = LocalDateTime.now();
+            List<Seat> seats = seatDao.findAll();
+            for (Seat seat : seats) {
+                Iterator<SeatWithTimeStamp> iterator = seat.getSeats().iterator();
+                while (iterator.hasNext()) {
+                    SeatWithTimeStamp seatWithTimeStamp = iterator.next();
+                    if (seatWithTimeStamp.getTimestamp().isBefore(currentTime.minusMinutes(1))) {
+                        iterator.remove(); // Remove the stale SeatWithTimeStamp
+                    }
+                }
+                seatDao.save(seat); // Save the Seat entity to persist the changes
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\service\StationService.java ====
+package com.app.service;
+
+import java.util.List;
+
+import com.app.dto.ApiResponse;
+import com.app.dto.GetStationsDto;
+import com.app.entities.Station;
+
+public interface StationService {
+
+	ApiResponse addStation(Station station);
+	
+	List<GetStationsDto> getStations();
+
+	boolean deleteStationById(Long stationId);
+	
+	public Station updateStation(Station station);
+//	void getStations();
+
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\service\StationServiceImpl.java ====
+package com.app.service;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.transaction.Transactional;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.stereotype.Service;
+
+import com.app.dao.StationDao;
+import com.app.dto.ApiResponse;
+import com.app.dto.GetStationsDto;
+import com.app.entities.Station;
+
+@Service
+@Transactional
+public class StationServiceImpl implements StationService {
+
+	@Autowired
+	private StationDao stationDao;
+
+	@Override
+	public ApiResponse addStation(Station station) {
+		stationDao.save(station);
+		return new ApiResponse("Station added Successfully");
+	}
+
+	public List<GetStationsDto> mapToDtoList(List<Station> entityList) {
+		List<GetStationsDto> dtoList = new ArrayList<>();
+
+		for (Station entity : entityList) {
+			GetStationsDto dto = new GetStationsDto();
+			dto.setId(entity.getId());
+			dto.setStation_name(entity.getStationName());
+			// Map other properties
+
+			dtoList.add(dto);
+		}
+
+		return dtoList;
+	}
+
+	@Override
+	public List<GetStationsDto> getStations() {
+
+		List<Station> list = stationDao.findAll();
+
+		List<GetStationsDto> list1 = mapToDtoList(list);
+
+//		GetStationsDto targetListType = new TypeToken<List<GetStationsDto>>() {}.getType();
+//		List<GetStationsDto> dtoList = mapper.map(list, targetListType);
+
+//		List<GetStationsDto> listdto = mapper.map(list, new TypeToken<List<GetStationsDto>>() {}.getType());
+//		System.out.println(list1.toString());
+		return list1;
+	}
+
+	@Override
+	public boolean deleteStationById(Long stationId) {
+		try {
+			if (stationDao.existsById(stationId)) {
+				// If the station exists, attempt to delete it
+				stationDao.deleteById(stationId);
+				// Log a message indicating successful deletion
+				System.out.println("Station with ID " + stationId + " deleted successfully.");
+				return true;
+			} else {
+				// Log a message indicating that the station doesn't exist
+				System.out.println("Station with ID " + stationId + " does not exist.");
+				return false;
+			}
+		} catch (DataIntegrityViolationException e) {
+			// Log the exception for debugging purposes
+			e.printStackTrace();
+			// Log a message indicating that the deletion failed due to a constraint
+			// violation
+			System.out.println("Could not delete station with ID " + stationId + " due to a constraint violation.");
+			return false;
+		} catch (Exception e) {
+			// Log the exception for debugging purposes
+			e.printStackTrace();
+			// Handle any other unexpected exceptions and return false
+			return false;
+		}
+	}
+
+	@Override
+	public Station updateStation(Station station) {
+		try {
+			return stationDao.save(station);
+		} catch (Exception e) {
+			// Log the exception for debugging purposes
+			e.printStackTrace();
+			// You can throw a custom exception or return null based on your application's
+			// logic
+			throw new RuntimeException("Error occurred while updating the station: " + e.getMessage());
+		}
+	}
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\service\UserService.java ====
+package com.app.service;
+
+import com.app.dto.Signup;
+import com.app.entities.User;
+
+public interface UserService {
+//sign up
+	Signup userRegistration(Signup reqDTO);
+	void resetPassword(User user, String newPassword);
+	User findByEmail(String email);
+	boolean verifyPassword(Long userId, String oldPassword);
+	void changePassword(Long userId, String newPassword);
+	User getUserById(Long userId);
+}
+
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\service\UserServiceImpl.java ====
+package com.app.service;
+
+import java.util.Optional;
+
+import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.app.dao.UserDao;
+import com.app.dto.Signup;
+import com.app.entities.User;
+
+@Service
+@Transactional
+public class UserServiceImpl implements UserService {
+	//dep : dao layer i/f
+	@Autowired
+	private UserDao userDao;
+	//dep
+	@Autowired
+	private ModelMapper mapper;
+	//dep 
+	@Autowired
+	private PasswordEncoder encoder;
+	
+
+	@Override
+	public Signup userRegistration(Signup reqDTO) {
+		//dto --> entity
+		User user=mapper.map(reqDTO, User.class);
+		user.setPassword(encoder.encode(user.getPassword()));//pwd : encrypted using SHA
+		return mapper.map(userDao.save(user), Signup.class);
+	}
+    public void resetPassword(User user, String newPassword) {
+        // Encode the new password before updating
+        String encodedPassword = encoder.encode(newPassword);
+        
+        // Update the user's password in the database
+        user.setPassword(encodedPassword);
+        userDao.save(user);
+    }
+
+    
+    public User findByEmail(String email) {
+        // Retrieve the user from the database based on the email address
+        Optional<User> userOptional = userDao.findByEmail(email);
+        return userOptional.orElse(null); // Return null if user not found
+    }
+    
+    public boolean verifyPassword(Long userId, String oldPassword) {
+        User user = userDao.findById(userId).orElse(null);
+
+        // Check if the user exists
+        if (user == null) {
+            return false;
+        }
+
+        // Use the password encoder to verify the old password
+        return encoder.matches(oldPassword, user.getPassword());
+    }
+    
+    public void changePassword(Long userId, String newPassword) {
+        User user = userDao.findById(userId).orElse(null);
+
+        // Check if the user exists
+        if (user != null) {
+            // Use the password encoder to encode the new password before saving
+            user.setPassword(encoder.encode(newPassword));
+            userDao.save(user);
+        }
+    }
+    
+    public User getUserById(Long userId) {
+        return userDao.findById(userId).orElse(null);
+    }
+}
+
+
+

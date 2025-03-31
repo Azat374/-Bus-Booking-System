@@ -25,8 +25,7 @@ const EditStationPopup = ({ show, handleClose, stationId, stationName }) => {
   const handleUpdateStation = async () => {
     try {
       const jwtToken = localStorage.getItem("jwtToken");
-      const response = await axiosInst.put(
-        `station/updatestation/${stationId}`,
+      const response = await axiosInst.put(`station/updatestation/${stationId}`,
         { station_name: editedStationName },
         {
           headers: {
@@ -95,7 +94,7 @@ const Stations = () => {
 
   const fetchStations = async () => {
     try {
-      const response = await axiosInst.get("station/getstations");
+      const response = await axiosInst.get("/station/getstations");
       setStations(response.data);
     } catch (error) {
       console.error("Error fetching stations:", error);

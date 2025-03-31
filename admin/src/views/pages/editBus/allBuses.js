@@ -52,8 +52,7 @@ const ShowBuses = () => {
 
   const handleSaveEdit = async () => {
     try {
-      const response = await axiosInst.put(
-        `/bus/updatebus/${editedBus.id}/${editedBusDetails.driverId}`, // Передаем ID водителя
+      const response = await axiosInst.put(`/bus/updatebus/${editedBus.id}/${editedBusDetails.driverId}`, // Передаем ID водителя
         editedBusDetails,
         {
           headers: {
