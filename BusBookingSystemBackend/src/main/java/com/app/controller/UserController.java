@@ -26,6 +26,8 @@ import com.app.security.CustomUserDetails;
 import com.app.security.JwtUtils;
 import com.app.service.UserService;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/user")
 
@@ -86,6 +88,11 @@ public class UserController {
 		userService.changePassword(userId, changePasswordRequest.getNewPassword());
 
 		return ResponseEntity.ok("Password changed successfully");
+	}
+
+	@GetMapping("/clients")
+	public ResponseEntity<List<GetUserDto>> getClients(){
+		return ResponseEntity.ok(userService.getClients());
 	}
 
 	@GetMapping("/{userId}")

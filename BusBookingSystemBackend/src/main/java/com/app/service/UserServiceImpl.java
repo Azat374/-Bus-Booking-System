@@ -1,7 +1,11 @@
 package com.app.service;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
+import com.app.dto.GetUserDto;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -74,5 +78,12 @@ public class UserServiceImpl implements UserService {
     
     public User getUserById(Long userId) {
         return userDao.findById(userId).orElse(null);
+    }
+
+    @Override
+    public List<GetUserDto> getClients(){
+        List<User> clients = userDao.findAllClients();
+        List<GetUserDto> clientDtos = clients.stream().map(client -> mapper.map(client, GetUserDto.class)).collect(Collectors.toList());
+        return clientDtos;
     }
 }

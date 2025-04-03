@@ -304,7 +304,7 @@ public class BusController {
 package com.app.controller;
 
 import com.app.entities.BusSchedule;
-import com.app.service.BusScheduleService;
+import com.app.service.BusScheduleServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
