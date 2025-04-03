@@ -1,5 +1,3 @@
-// admin/src/views/pages/schedule/Schedules.js
-
 import React, { useEffect, useState } from "react";
 import { Table, Button, Form } from "react-bootstrap";
 import { axiosInst } from "src/axiosInstance";
@@ -8,11 +6,14 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faTrash } from "@fortawesome/free-solid-svg-icons";
 
 const Schedules = () => {
-  const [buses, setBuses] = useState([]);     // список автобусов
-  const [busId, setBusId] = useState("");     // текущий выбор выпадающего списка
+  const [buses, setBuses] = useState([]);
+  const [busId, setBusId] = useState("");
   const [schedules, setSchedules] = useState([]);
 
-  // Загружаем список всех автобусов (или только тех, что нужны)
+  useEffect(() => {
+    fetchAllBuses();
+  }, []);
+
   const fetchAllBuses = async () => {
     try {
       const res = await axiosInst.get(`/bus/getallbuses`, {
@@ -26,25 +27,25 @@ const Schedules = () => {
     }
   };
 
-  // Загружаем расписание выбранного автобуса
   const fetchSchedules = async () => {
-    if (!busId) return;
+    if (!busId) {
+      toast.error("Please select a bus first");
+      return;
+    }
+  
     try {
       const res = await axiosInst.get(`/schedule/${busId}`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("jwtToken")}`,
-        },
+        headers: { Authorization: `Bearer ${localStorage.getItem("jwtToken")}` },
       });
       setSchedules(res.data);
     } catch (error) {
       toast.error("Failed to fetch schedules.");
     }
   };
+  
 
-  // Удаление расписания
   const handleDeleteSchedule = async (scheduleId) => {
-    const confirmed = window.confirm("Delete this schedule entry?");
-    if (!confirmed) return;
+    if (!window.confirm("Delete this schedule entry?")) return;
     try {
       await axiosInst.delete(`/schedule/${scheduleId}`, {
         headers: {
@@ -52,43 +53,28 @@ const Schedules = () => {
         },
       });
       toast.success("Schedule entry deleted");
-      fetchSchedules(); // перезагружаем расписание
+      fetchSchedules();
     } catch (error) {
       toast.error("Failed to delete schedule entry.");
     }
   };
-
-  // При первой загрузке компонента - грузим автобусы
-  useEffect(() => {
-    fetchAllBuses();
-  }, []);
-
-  // Когда busId меняется — грузим расписание
-  useEffect(() => {
-    if (busId) {
-      fetchSchedules();
-    }
-  }, [busId]);
 
   return (
     <div>
       <h3>Bus Schedules</h3>
 
       <Form.Group className="mb-2" style={{ maxWidth: "300px" }}>
-        <Form.Label>Select Bus:</Form.Label>
-        <Form.Select
-          value={busId}
-          onChange={(e) => setBusId(e.target.value)}
-          aria-label="Select Bus"
-        >
-          <option value="">-- Select Bus --</option>
-          {buses.map((bus) => (
-            <option key={bus.id} value={bus.id}>
-              {bus.busNo} (ID: {bus.id})
-            </option>
-          ))}
-        </Form.Select>
-      </Form.Group>
+  <Form.Label>Select Bus:</Form.Label>
+  <Form.Select value={busId} onChange={(e) => setBusId(e.target.value)}>
+    <option value="">-- Select Bus --</option>
+    {[...new Map(buses.map(bus => [bus.busNo, bus])).values()].map((bus) => (
+      <option key={bus.id} value={bus.id}>
+        {bus.busNo} (ID: {bus.id})
+      </option>
+    ))}
+  </Form.Select>
+</Form.Group>
+
 
       <Button onClick={fetchSchedules} className="mb-3">
         Load Schedule
@@ -98,29 +84,36 @@ const Schedules = () => {
         <thead>
           <tr>
             <th>ID</th>
-            <th>Day of Month</th>
+            <th>Bus No</th>
+            <th>From</th>
+            <th>To</th>
+            <th>Departure Date</th>
             <th>Departure Time</th>
-            <th>Active</th>
+            <th>Class</th>
             <th>Actions</th>
           </tr>
         </thead>
         <tbody>
-          {schedules.map((sch) => (
-            <tr key={sch.id}>
-              <td>{sch.id}</td>
-              <td>{sch.dayOfMonth}</td>
-              <td>{sch.departureTime}</td>
-              <td>{sch.active ? "Yes" : "No"}</td>
-              <td>
-                <FontAwesomeIcon
-                  icon={faTrash}
-                  color="red"
-                  style={{ cursor: "pointer" }}
-                  onClick={() => handleDeleteSchedule(sch.id)}
-                />
-              </td>
-            </tr>
-          ))}
+        {schedules.map((sch) => (
+  <tr key={sch.id}>
+    <td>{sch.id}</td>
+    <td>{sch.busNo}</td>
+    <td>{sch.from}</td>
+    <td>{sch.to}</td>
+    <td>{sch.departureDate}</td>
+    <td>{sch.departureTime}</td>
+    <td>{sch.busClass}</td>
+    <td>
+      <FontAwesomeIcon
+        icon={faTrash}
+        color="red"
+        style={{ cursor: "pointer" }}
+        onClick={() => handleDeleteSchedule(sch.id)}
+      />
+    </td>
+  </tr>
+))}
+
         </tbody>
       </Table>
     </div>

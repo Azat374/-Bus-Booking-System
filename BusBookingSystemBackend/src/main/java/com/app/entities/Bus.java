@@ -16,7 +16,6 @@ import lombok.*;
 @ToString
 public class Bus extends Base {
 
-    @Column(unique = true)
     @Pattern(regexp = "[A-Z]{2}[0-9]{2}[A-Z]{2}[0-9]{4}", message = "Invalid vehicle number")
     private String busNo;
 
@@ -38,4 +37,7 @@ public class Bus extends Base {
 
     @Enumerated(EnumType.STRING)
     private BusClass busClass;
+
+    @Column(name = "price")
+    private Double price;
 }

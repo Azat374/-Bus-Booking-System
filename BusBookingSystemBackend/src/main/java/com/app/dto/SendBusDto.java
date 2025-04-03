@@ -18,7 +18,7 @@ public class SendBusDto {
 	private String busNo;
 	private String from;
 	private String to;
-	private int cost;
+	private Double cost;
 	//private int availableSeats;
 	private String duration;
 	private LocalDateTime startTime;

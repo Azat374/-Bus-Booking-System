@@ -1,18 +1,15 @@
-// admin/src/views/pages/schedule/AddSchedule.js
-
 import React, { useState, useEffect } from "react";
 import { Form, Button } from "react-bootstrap";
 import { axiosInst } from "src/axiosInstance";
 import { toast } from "react-hot-toast";
 
 const AddSchedule = () => {
-  const [buses, setBuses] = useState([]);  // массив автобусов
-  const [busId, setBusId] = useState(""); // ID выбранного автобуса
+  const [buses, setBuses] = useState([]);
+  const [busId, setBusId] = useState("");
   const [dayOfMonth, setDayOfMonth] = useState("");
   const [departureTime, setDepartureTime] = useState("");
   const [active, setActive] = useState(true);
 
-  // Грузим список автобусов при монтировании
   useEffect(() => {
     fetchAllBuses();
   }, []);
@@ -32,25 +29,19 @@ const AddSchedule = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!busId) {
-      toast.error("Please select a bus");
-      return;
-    }
-
+  
+    const payload = {
+      dayOfMonth: parseInt(dayOfMonth, 10),
+      departureTime: departureTime + ":00",
+      active,
+    };
+  
     try {
-      // Формируем тело запроса
-      const payload = { dayOfMonth, departureTime, active };
-
-      // Делаем запрос на /schedule/add/{busId}
       await axiosInst.post(`/schedule/add/${busId}`, payload, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("jwtToken")}`,
-        },
+        headers: { Authorization: `Bearer ${localStorage.getItem("jwtToken")}` },
       });
-
-      toast.success("Schedule entry added");
-      // очистка полей
+  
+      toast.success("Schedule entry added successfully!");
       setDayOfMonth("");
       setDepartureTime("");
       setActive(true);
@@ -58,18 +49,19 @@ const AddSchedule = () => {
       toast.error("Failed to add schedule entry");
     }
   };
+  
+  
 
   return (
     <div>
       <h3>Add Schedule</h3>
       <Form onSubmit={handleSubmit} style={{ maxWidth: "400px" }}>
-        {/* Выпадающий список автобусов */}
         <Form.Group className="mb-2">
           <Form.Label>Bus</Form.Label>
           <Form.Select
             value={busId}
             onChange={(e) => setBusId(e.target.value)}
-            aria-label="Select Bus"
+            required
           >
             <option value="">-- Select Bus --</option>
             {buses.map((bus) => (
@@ -93,12 +85,11 @@ const AddSchedule = () => {
         </Form.Group>
 
         <Form.Group className="mb-2">
-          <Form.Label>Departure Time (e.g., 10:00)</Form.Label>
+          <Form.Label>Departure Time</Form.Label>
           <Form.Control
             type="time"
             value={departureTime}
             onChange={(e) => setDepartureTime(e.target.value)}
-            placeholder="HH:MM"
             required
           />
         </Form.Group>

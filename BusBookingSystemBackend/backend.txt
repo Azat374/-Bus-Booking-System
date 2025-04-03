@@ -303,9 +303,10 @@ public class BusController {
 ==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\controller\BusScheduleController.java ====
 package com.app.controller;
 
-import com.app.entities.BusSchedule;
-import com.app.service.BusScheduleServiceImpl;
+import com.app.dto.ScheduleDto;
+import com.app.service.BusScheduleService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -317,22 +318,21 @@ public class BusScheduleController {
     @Autowired
     private BusScheduleService scheduleService;
 
-    // Добавить расписание для конкретного автобуса
     @PostMapping("/add/{busId}")
-    public BusSchedule addSchedule(@PathVariable Long busId, @RequestBody BusSchedule schedule) {
-        return scheduleService.addSchedule(busId, schedule);
+    public ResponseEntity<?> addSchedule(@PathVariable Long busId, @RequestBody ScheduleDto dto) {
+        scheduleService.addBusAsSchedule(busId, dto);
+        return ResponseEntity.ok("Schedule (Bus) added successfully");
     }
 
-    // Получить все расписания для автобуса
     @GetMapping("/{busId}")
-    public List<BusSchedule> getSchedules(@PathVariable Long busId) {
-        return scheduleService.getSchedulesForBus(busId);
+    public ResponseEntity<List<ScheduleDto>> getSchedules(@PathVariable Long busId) {
+        return ResponseEntity.ok(scheduleService.getSchedulesForBus(busId));
     }
 
-    // Удалить расписание
-    @DeleteMapping("/{scheduleId}")
-    public void deleteSchedule(@PathVariable Long scheduleId) {
-        scheduleService.deleteSchedule(scheduleId);
+    @DeleteMapping("/{busId}")
+    public ResponseEntity<?> deleteSchedule(@PathVariable Long busId) {
+        scheduleService.deleteBusSchedule(busId);
+        return ResponseEntity.ok("Schedule (Bus) deleted successfully");
     }
 }
 
@@ -616,8 +616,8 @@ public class PaymentController {
 			SessionCreateParams params = SessionCreateParams.builder()
 					.addPaymentMethodType(SessionCreateParams.PaymentMethodType.CARD)
 					.setMode(SessionCreateParams.Mode.PAYMENT)
-					.setSuccessUrl("https://yourdomain.com/checkout/success?session_id={CHECKOUT_SESSION_ID}")
-					.setCancelUrl("https://yourdomain.com/checkout/cancel")
+					.setSuccessUrl("https://buy.stripe.com/test_14kdTpc1saeB0a43cc/checkout/success?session_id={CHECKOUT_SESSION_ID}")
+					.setCancelUrl("https://buy.stripe.com/test_14kdTpc1saeB0a43cc/checkout/cancel")
 					.addLineItem(
 							SessionCreateParams.LineItem.builder()
 									.setQuantity(1L)
@@ -1006,6 +1006,8 @@ import com.app.security.CustomUserDetails;
 import com.app.security.JwtUtils;
 import com.app.service.UserService;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/user")
 
@@ -1066,6 +1068,11 @@ public class UserController {
 		userService.changePassword(userId, changePasswordRequest.getNewPassword());
 
 		return ResponseEntity.ok("Password changed successfully");
+	}
+
+	@GetMapping("/clients")
+	public ResponseEntity<List<GetUserDto>> getClients(){
+		return ResponseEntity.ok(userService.getClients());
 	}
 
 	@GetMapping("/{userId}")
@@ -1138,7 +1145,7 @@ import org.springframework.data.repository.query.Param;
 
 public interface BusDao extends JpaRepository<Bus, Long>{
 	
-	Optional<Bus> findByBusNo(int busNo);
+	List<Bus> findByBusNo(String busNo);
 	Optional<Bus> findById(long Id);
 	List<Bus> findByRoute(Routes r);
 	Optional<Bus> findByBusNoAndStartTime(int busNo,LocalDate date);
@@ -1149,18 +1156,6 @@ public interface BusDao extends JpaRepository<Bus, Long>{
 	@Query("SELECT b FROM Bus b WHERE b.driver.id = :driverId")
 	List<Bus> findByDriverId(@Param("driverId") Long driverId);
 
-}
-
-
-
-==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\dao\BusScheduleDao.java ====
-package com.app.dao;
-
-import org.springframework.data.jpa.repository.JpaRepository;
-import com.app.entities.BusSchedule;
-
-public interface BusScheduleDao extends JpaRepository<BusSchedule, Long> {
-    // Доп. методы поиска, если нужно
 }
 
 
@@ -1321,15 +1316,20 @@ public interface StationDao extends JpaRepository<Station, Long>{
 ==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\dao\UserDao.java ====
 package com.app.dao;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import com.app.entities.User;
+import org.springframework.data.jpa.repository.Query;
 
 public interface UserDao extends JpaRepository<User,Long>{
 //derived finder 
 	Optional<User> findByEmail(String email);
+
+	@Query("SELECT u FROM User u WHERE u.role = 'ROLE_CUSTOMER'")
+	List<User> findAllClients();
 	
 }
 
@@ -1959,6 +1959,46 @@ public class ResetRequest {
 
 
 
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\dto\ScheduleDto.java ====
+package com.app.dto;
+
+import lombok.*;
+
+import java.time.LocalTime;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class ScheduleDto {
+    private Long id;
+    private String busNo;
+    private String from;
+    private String to;
+    private String departureDate;
+    private String departureTime;
+    private String busClass;
+
+    // Эти поля нужны для добавления
+    private int dayOfMonth;
+    private String departureTimeRaw;
+    private boolean active;
+
+    public ScheduleDto(Long id, String busNo, String from, String to,
+                       String departureDate, String departureTime, String busClass) {
+        this.id = id;
+        this.busNo = busNo;
+        this.from = from;
+        this.to = to;
+        this.departureDate = departureDate;
+        this.departureTime = departureTime;
+        this.busClass = busClass;
+    }
+}
+
+
+
+
 ==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\dto\SeatAllocationRequestDto.java ====
 package com.app.dto;
 
@@ -2369,7 +2409,6 @@ import lombok.*;
 @ToString
 public class Bus extends Base {
 
-    @Column(unique = true)
     @Pattern(regexp = "[A-Z]{2}[0-9]{2}[A-Z]{2}[0-9]{4}", message = "Invalid vehicle number")
     private String busNo;
 
@@ -2400,35 +2439,6 @@ package com.app.entities;
 
 public enum BusClass {
     BUSINESS, COMFORT, ECONOMY;
-}
-
-
-
-==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\entities\BusSchedule.java ====
-package com.app.entities;
-
-import java.time.LocalTime;
-import javax.persistence.*;
-
-import lombok.*;
-
-@Entity
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-public class BusSchedule extends Base {
-
-    @ManyToOne
-    private Bus bus;  // Какой автобус ходит по расписанию
-
-    // Например, 1, 4, 10 число месяца
-    private Integer dayOfMonth;
-
-    // Время отправления
-    private LocalTime departureTime;
-
-    private boolean active = true;
 }
 
 
@@ -3727,40 +3737,83 @@ public class BookingServiceImpl implements BookingService {
 ==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\service\BusScheduleService.java ====
 package com.app.service;
 
-import com.app.dao.BusDao;
-import com.app.dao.BusScheduleDao;
-import com.app.entities.Bus;
-import com.app.entities.BusSchedule;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
+import com.app.dto.ScheduleDto;
 import java.util.List;
 
-@Service
-public class BusScheduleService {
+public interface BusScheduleService {
+    void addBusAsSchedule(Long busId, ScheduleDto dto);
+    List<ScheduleDto> getSchedulesForBus(Long busId);
+    void deleteBusSchedule(Long busId);
+}
 
-    @Autowired
-    private BusScheduleDao scheduleDao;
+
+
+==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\service\BusScheduleServiceImpl.java ====
+package com.app.service;
+
+import com.app.dao.BusDao;
+import com.app.dto.ScheduleDto;
+import com.app.entities.Bus;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Service
+@Transactional
+public class BusScheduleServiceImpl implements BusScheduleService {
+
     @Autowired
     private BusDao busDao;
 
-    public BusSchedule addSchedule(Long busId, BusSchedule schedule) {
-        Bus bus = busDao.findById(busId)
+    @Override
+    public void addBusAsSchedule(Long busId, ScheduleDto dto) {
+        Bus originalBus = busDao.findById(busId)
                 .orElseThrow(() -> new RuntimeException("Bus not found"));
-        schedule.setBus(bus);
-        return scheduleDao.save(schedule);
+
+        Bus newBus = new Bus();
+        newBus.setBusNo(originalBus.getBusNo());
+        newBus.setRoute(originalBus.getRoute());
+        newBus.setDriver(originalBus.getDriver());
+        newBus.setBusClass(originalBus.getBusClass());
+        newBus.setTotalSeats(originalBus.getTotalSeats());
+
+        LocalDate date = LocalDate.now().withDayOfMonth(dto.getDayOfMonth());
+        LocalTime departureTime = LocalTime.parse(dto.getDepartureTime());
+        newBus.setStartTime(LocalDateTime.of(date, departureTime));
+        newBus.setEndTime(newBus.getStartTime().plusHours(3)); // или своё значение
+
+        busDao.save(newBus);
     }
 
-    public List<BusSchedule> getSchedulesForBus(Long busId) {
-        // Простейший способ: получить все и отфильтровать
-        // (или сделать метод в репозитории, если нужно).
-        return scheduleDao.findAll().stream()
-                .filter(s -> s.getBus().getId().equals(busId))
-                .toList();
+    @Override
+    public List<ScheduleDto> getSchedulesForBus(Long busId) {
+        Bus originalBus = busDao.findById(busId)
+                .orElseThrow(() -> new RuntimeException("Bus not found"));
+
+        List<Bus> buses = busDao.findByBusNo(originalBus.getBusNo());
+
+        return buses.stream().map(bus -> new ScheduleDto(
+                bus.getId(),
+                bus.getBusNo(),
+                bus.getRoute().getStationIdBoarding().getStationName(),
+                bus.getRoute().getStationIdDestination().getStationName(),
+                bus.getStartTime().toLocalDate().toString(),
+                bus.getStartTime().toLocalTime().toString(),
+                bus.getBusClass().toString()
+        )).collect(Collectors.toList());
     }
 
-    public void deleteSchedule(Long scheduleId) {
-        scheduleDao.deleteById(scheduleId);
+    @Override
+    public void deleteBusSchedule(Long busId) {
+        if (!busDao.existsById(busId))
+            throw new RuntimeException("Bus not found");
+        busDao.deleteById(busId);
     }
 }
 
@@ -3854,9 +3907,7 @@ public class BusSeviceImpl implements BusService {
 	public ApiResponse addBus(Bus bus, long routeId, Long driverId) {
 		Routes route = routeDao.findById(routeId)
 				.orElseThrow(() -> new RuntimeException("Route not found."));
-		if (busDao.existsByBusNo(bus.getBusNo())) {
-			throw new RuntimeException("Duplicate bus found.");
-		}
+
 		if (driverId != null) {
 			Driver driver = driverDao.findById(driverId)
 					.orElseThrow(() -> new RuntimeException("Driver not found."));
@@ -3918,7 +3969,7 @@ public class BusSeviceImpl implements BusService {
 	    // Prepare and return the list of SendBusDto objects
 	    return filteredBuses.stream()
 	            .map(bus -> {
-	                int cost = (int) route.getDistance() * 1000;
+	                int cost = (int) route.getDistance() * 2;
 	                double duration = (double) route.getDistance() * 1.5;
 	                String durationString = duration >= 60 ? (duration / 60) + "hr" : duration + "min";
 	                String busNo=bus.getBusNo();
@@ -4879,8 +4930,12 @@ public class StationServiceImpl implements StationService {
 ==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\service\UserService.java ====
 package com.app.service;
 
+import com.app.dto.GetUserDto;
 import com.app.dto.Signup;
 import com.app.entities.User;
+import org.springframework.http.ResponseEntity;
+
+import java.util.List;
 
 public interface UserService {
 //sign up
@@ -4890,6 +4945,7 @@ public interface UserService {
 	boolean verifyPassword(Long userId, String oldPassword);
 	void changePassword(Long userId, String newPassword);
 	User getUserById(Long userId);
+	List<GetUserDto> getClients();
 }
 
 
@@ -4897,8 +4953,12 @@ public interface UserService {
 ==== C:\Users\Admin\Desktop\BookingBus\Bus-Booking-System\BusBookingSystemBackend\src\main\java\com\app\service\UserServiceImpl.java ====
 package com.app.service;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
+import com.app.dto.GetUserDto;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -4971,6 +5031,13 @@ public class UserServiceImpl implements UserService {
     
     public User getUserById(Long userId) {
         return userDao.findById(userId).orElse(null);
+    }
+
+    @Override
+    public List<GetUserDto> getClients(){
+        List<User> clients = userDao.findAllClients();
+        List<GetUserDto> clientDtos = clients.stream().map(client -> mapper.map(client, GetUserDto.class)).collect(Collectors.toList());
+        return clientDtos;
     }
 }
 

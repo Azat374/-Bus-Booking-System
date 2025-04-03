@@ -151,6 +151,30 @@ public class PaymentController {
 					.body(e.getMessage());
 		}
 	}
+
+	@PostMapping("/stripe-verify")
+	public ResponseEntity<?> stripeVerifyPayment(@RequestBody BookingsDto requestBody) {
+		try {
+			// Можно дополнительно проверить реальный статус платежа через Stripe Webhook
+			// Но в упрощённом варианте просто вызываем:
+			ApiResponse response = bookingService.addBooking(requestBody);
+
+			// Если нужно, разблокируем места
+			// ...
+			// return 200 OK
+			if (response.getStatus() == HttpStatus.CREATED) {
+				return ResponseEntity.ok(Map.of("success", true, "id", response.getId()));
+			} else {
+				return ResponseEntity.status(response.getStatus())
+						.body(Map.of("success", false, "message", response.getMessage()));
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+					.body(Map.of("error", "Stripe payment verification failed"));
+		}
+	}
+
 //	@PostMapping("/refund")
 //    public ResponseEntity<?> initiateRefund(@RequestBody RefundRequest request) {
 //        try {

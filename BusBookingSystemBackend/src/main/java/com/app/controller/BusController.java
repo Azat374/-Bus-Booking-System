@@ -73,6 +73,7 @@ public class BusController {
 		bus.setStartTime(busDto.getStartTime());
 		bus.setEndTime(busDto.getEndTime());
 		bus.setBusClass(busDto.getBusClass());
+		bus.setPrice(busDto.getPrice());
 		return bus;
 	}
 

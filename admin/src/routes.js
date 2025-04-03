@@ -18,7 +18,7 @@ const AddSegment = React.lazy(() => import('./views/pages/routeSegment/AddSegmen
 
 const Payments = React.lazy(() => import('./views/pages/payments/Payments'))
 const ViewBooking = React.lazy(() => import('./views/pages/viewBooking/ViewBooking'))
-
+const Clients = React.lazy(() => import('./views/pages/clients/Clients'))
 
 
 
@@ -45,6 +45,8 @@ const routes = [
 
   { path: '/pages/segments', name: 'RouteSegments', element: RouteSegments },
   { path: '/pages/addSegment', name: 'AddSegment', element: AddSegment },
+
+  { path: '/pages/clients', name: 'Clients', element: Clients },
 
   { path: '/pages/payments', name: 'Payments', element: Payments },
   { path: '/pages/viewBooking', name: 'ViewBooking', element: ViewBooking },

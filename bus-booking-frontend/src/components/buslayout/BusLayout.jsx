@@ -99,94 +99,101 @@ export default function BusLayout() {
     
         // Add header with download date and site name
         const downloadDate = new Date().toLocaleDateString();
-        const siteName = "https:localhost:3001/"; // Update with your site name
-        doc.setFontSize(8);
-        doc.text(
-          `Site Name: ${siteName}  |  Download Date: ${downloadDate}`,
-          100,
-          10
-        );
-    
-        doc.addImage(logoDataUrl, "PNG", 10, 15, 40, 40);
-        // Title
-        doc.setFont("Amiri");
-        doc.setFontSize(24);
-        doc.setTextColor('#333');
-        doc.text("Dimash Bus", doc.internal.pageSize.width / 2, 30, 'center');
-  
-        // Border
-        doc.setDrawColor('#333'); // Border color
-        doc.setLineWidth(0.5); // Border width
-        doc.rect(5, 15, doc.internal.pageSize.width - 10, doc.internal.pageSize.height-25); // Border rectangle with minimized margin
-  
-  
-        // QR Code
-        const qrText = `Booking ID: ${ticketid}\nBus No: ${ticketDetails.busNo}\nFrom: ${ticketDetails.from} at ${formatDateTime(ticketDetails.startTime)}\nBooking Date: ${formatDate(ticketDetails.bookingDateTime)}`;
-        const canvas = document.createElement('canvas');
-        await QRCode.toCanvas(canvas, qrText);
-        const imageData = canvas.toDataURL('image/jpeg', 1.0);
-        doc.addImage(imageData, 'JPEG', 150, 30, 50, 50);
-  
-        // Ticket Details
-        doc.setFontSize(16);
-        doc.setTextColor('#333');
-        doc.text(`Ticket Details - Booking ID ${ticketid}`, 20, 70);
-        doc.setFontSize(12);
-        doc.text(`Bus No: ${ticketDetails.busNo}`, 20, 90);
-        doc.text(`From: ${ticketDetails.from} at ${formatDateTime(ticketDetails.startTime)}`, 20, 105);
-        doc.text(`To: ${ticketDetails.to} at ${formatDateTime(ticketDetails.endTime)}`, 20, 120);
-        doc.text(`Booking Date: ${formatDate(ticketDetails.bookingDateTime)}`, 20, 135);
-        const totalPassengers = ticketDetails.seatPassengerList.length;
-        doc.text(`Total Passengers: ${totalPassengers}`, 20, 150);
-  
-  
-        // passenger
-        const startY = 170; // Initial position of the table
-        const tableHeight = 20 + totalPassengers * 10; // Height of the table
-        const endY = startY + tableHeight; // Final position of the table
-        const overflow = endY > doc.internal.pageSize.height; // Check if the table overflows the page
-  
-        const passengerTable = [];
-        ticketDetails.seatPassengerList.forEach((passenger, index) => {
-            passengerTable.push([index + 1, passenger.seatNo, `${passenger.passenger.firstName} ${passenger.passenger.lastName}`, passenger.passenger.gender, passenger.passenger.age]);
-        });
-  
-        if (!overflow) {
-            autoTable(doc,{
-                startY,
-                head: [['#', 'Орын', 'Аты', 'Жыныс', 'Жасы']],
-                body: passengerTable,
-                margin: { top: 10 },
-                styles: { font: "Amiri", fontStyle: 'normal', fontSize: 10 }
-            });
-        } else {
-            // If table overflows, add it to a new page
-            doc.addPage();
-            autoTable(doc, {
-                startY: 50,
-                head: [['#', 'Орын', 'Аты', 'Жыныс', 'Жасы']],
-                body: passengerTable,
-                margin: { top: 10 },
-                styles: { font: 'Amiri', fontStyle: 'normal', fontSize: 10 }
-            });
-        }
-  
-        // Terms and Conditions
-        let termsY = overflow ? 50 : endY + 20; // Adjust terms position based on table overflow
-        doc.setFontSize(10);
-        doc.setTextColor('#666');
-        const termsAndConditions = `Terms and Conditions:
-  1. Please arrive at the boarding point 30 minutes before departure time.
-  2. No refunds or cancellations are allowed after booking.
-  3. Passengers are responsible for their belongings during the journey.`;
-        doc.text(termsAndConditions, 20, termsY);
-  
-        // Save PDF
-        doc.save(`Dimash_Bus_${ticketid}_.pdf`);
-      } catch (error) {
-          console.error("Error downloading ticket:", error);
-          toast.error("Something Went Wrong!, Please try again")
-      }
+const siteName = "https:localhost:3001/"; // Сайтыңыздың атауын жаңартыңыз
+doc.setFontSize(8);
+doc.text(
+  `Сайт атауы: ${siteName}  |  Жүктеу күні: ${downloadDate}`,
+  100,
+  10
+);
+
+// Логотип
+doc.addImage(logoDataUrl, "PNG", 10, 15, 40, 40);
+
+// Тақырып
+doc.setFont("Amiri");
+doc.setFontSize(24);
+doc.setTextColor('#333');
+doc.text("Dimash Bus", doc.internal.pageSize.width / 2, 30, 'center');
+
+// Шекара
+doc.setDrawColor('#333'); // Шекара түсі
+doc.setLineWidth(0.5); // Шекара қалыңдығы
+doc.rect(5, 15, doc.internal.pageSize.width - 10, doc.internal.pageSize.height-25); // Шекараның ректанглі (шеті кішірейтілген)
+
+// QR код
+const qrText = `Брондау ID: ${ticketid}\nАвтобус №: ${ticketDetails.busNo}\nҚайдан: ${ticketDetails.from} ${formatDateTime(ticketDetails.startTime)}\nБрондау күні: ${formatDate(ticketDetails.bookingDateTime)}`;
+const canvas = document.createElement('canvas');
+await QRCode.toCanvas(canvas, qrText);
+const imageData = canvas.toDataURL('image/jpeg', 1.0);
+doc.addImage(imageData, 'JPEG', 150, 30, 50, 50);
+
+// Билет туралы мәліметтер
+doc.setFontSize(16);
+doc.setTextColor('#333');
+doc.text(`Билет туралы мәлімет - Брондау ID ${ticketid}`, 20, 70);
+doc.setFontSize(12);
+doc.text(`Автобус №: ${ticketDetails.busNo}`, 20, 90);
+doc.text(`Қайдан: ${ticketDetails.from} - ${formatDateTime(ticketDetails.startTime)}`, 20, 105);
+doc.text(`Қайда: ${ticketDetails.to} - ${formatDateTime(ticketDetails.endTime)}`, 20, 120);
+doc.text(`Брондау күні: ${formatDate(ticketDetails.bookingDateTime)}`, 20, 135);
+const totalPassengers = ticketDetails.seatPassengerList.length;
+doc.text(`Жолаушылар саны: ${totalPassengers}`, 20, 150);
+
+// Жолаушылар
+const startY = 170;
+const tableHeight = 20 + totalPassengers * 10;
+const endY = startY + tableHeight;
+const overflow = endY > doc.internal.pageSize.height;
+
+const passengerTable = [];
+ticketDetails.seatPassengerList.forEach((passenger, index) => {
+    passengerTable.push([
+        index + 1,
+        passenger.seatNo,
+        `${passenger.passenger.firstName} ${passenger.passenger.lastName}`,
+        passenger.passenger.gender,
+        passenger.passenger.age
+    ]);
+});
+
+if (!overflow) {
+    autoTable(doc, {
+        startY,
+        head: [['#', 'Орын', 'Аты', 'Жыныс', 'Жасы']],
+        body: passengerTable,
+        margin: { top: 10 },
+        styles: { font: "Amiri", fontStyle: 'normal', fontSize: 10 }
+    });
+} else {
+    // Егер кесте беттің шегінен асса, жаңа бет қосу
+    doc.addPage();
+    autoTable(doc, {
+        startY: 50,
+        head: [['#', 'Орын', 'Аты', 'Жыныс', 'Жасы']],
+        body: passengerTable,
+        margin: { top: 10 },
+        styles: { font: 'Amiri', fontStyle: 'normal', fontSize: 10 }
+    });
+}
+
+// Шарттар мен ережелер
+let termsY = overflow ? 50 : endY + 20;
+doc.setFontSize(10);
+doc.setTextColor('#666');
+const termsAndConditions = `Шарттар мен ережелер:
+1. Жөнелту уақытынан 30 минут бұрын келуіңіз сұралады.
+2. Брондаудан кейін қайтару немесе бас тарту мүмкін емес.
+3. Сапар барысында жолаушылар өз мүліктеріне жауапты.`;
+doc.text(termsAndConditions, 20, termsY);
+
+// PDF сақтау
+doc.save(`Dimash_Bus_${ticketid}_.pdf`);
+} catch (error) {
+    console.error("Билетті жүктеу кезінде қате:", error);
+    toast.error("Қате орын алды! Қайтадан көріңіз.")
+}
+
   };
 
   // ======= ОБНОВЛЯЕМ CONFIRM OBJECT =======

@@ -21,6 +21,7 @@ const AddBus = () => {
   const [driversData, setDriversData] = useState([]);
   const [selectedDate, setSelectedDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
+  const [price, setPrice] = useState("");
 
   useEffect(() => {
     fetchRoutes();
@@ -58,7 +59,7 @@ const AddBus = () => {
   };
 
   const addBus = async () => {
-    if (!busDetails.busNo || !busDetails.totalSeats || !selectedDate || !endDate || !busDetails.routeId || !busDetails.driverId) {
+    if (!busDetails.busNo || !busDetails.totalSeats || !selectedDate || !endDate || !busDetails.routeId || !busDetails.driverId || !price) {
       toast.error("Please fill in all required fields.");
       return;
     }
@@ -70,7 +71,7 @@ const AddBus = () => {
     }
   
     try {
-      const response = await axiosInst.post(
+      await axiosInst.post(
         `/bus/addbus/${busDetails.routeId}/${busDetails.driverId}`,
         {
           busNo: busDetails.busNo,
@@ -78,20 +79,22 @@ const AddBus = () => {
           startTime: selectedDate.toISOString(),
           endTime: endDate.toISOString(),
           routeId: busDetails.routeId,
-          dusClass: busDetails.busClass,
+          busClass: busDetails.busClass,
+          price: parseFloat(price)  // <-- добавили цену
         },
         {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
   
-      console.log("Server response:", response);
       toast.success("Bus added successfully.");
+      setPrice("");
     } catch (error) {
       console.error("Error adding bus:", error.response);
       toast.error(`Failed to add bus. ${error.response?.data || "Unknown error"}`);
     }
   };
+  
   
   
   return (
@@ -150,6 +153,19 @@ const AddBus = () => {
             <option value="ECONOMY">Economy</option>
           </select>
         </div>
+        <div className="form-group">
+          <label>Цена билета</label>
+          <input
+            type="number"
+            className="form-control"
+            name="price"
+            value={price}
+            onChange={(e) => setPrice(e.target.value)}
+            placeholder="Введите цену билета"
+            required
+          />
+        </div>
+
 
         <button type="button" onClick={addBus} className="btn btn-primary">Add Bus</button>
       </form>

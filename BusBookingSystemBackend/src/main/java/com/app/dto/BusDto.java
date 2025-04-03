@@ -31,6 +31,8 @@ public class BusDto {
     @Min(value = 1, message = "Route ID must be greater than 0")
     private int routeId;
 
+    private Double price;
+
     @NotNull(message = "Bus class must be specified")
     private BusClass busClass;
    

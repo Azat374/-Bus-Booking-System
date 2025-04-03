@@ -13,7 +13,7 @@ import org.springframework.data.repository.query.Param;
 
 public interface BusDao extends JpaRepository<Bus, Long>{
 	
-	Optional<Bus> findByBusNo(int busNo);
+	List<Bus> findByBusNo(String busNo);
 	Optional<Bus> findById(long Id);
 	List<Bus> findByRoute(Routes r);
 	Optional<Bus> findByBusNoAndStartTime(int busNo,LocalDate date);

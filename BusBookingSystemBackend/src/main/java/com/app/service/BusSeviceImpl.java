@@ -53,9 +53,7 @@ public class BusSeviceImpl implements BusService {
 	public ApiResponse addBus(Bus bus, long routeId, Long driverId) {
 		Routes route = routeDao.findById(routeId)
 				.orElseThrow(() -> new RuntimeException("Route not found."));
-		if (busDao.existsByBusNo(bus.getBusNo())) {
-			throw new RuntimeException("Duplicate bus found.");
-		}
+
 		if (driverId != null) {
 			Driver driver = driverDao.findById(driverId)
 					.orElseThrow(() -> new RuntimeException("Driver not found."));
@@ -117,7 +115,7 @@ public class BusSeviceImpl implements BusService {
 	    // Prepare and return the list of SendBusDto objects
 	    return filteredBuses.stream()
 	            .map(bus -> {
-	                int cost = (int) route.getDistance() * 2;
+	                Double cost = bus.getPrice();
 	                double duration = (double) route.getDistance() * 1.5;
 	                String durationString = duration >= 60 ? (duration / 60) + "hr" : duration + "min";
 	                String busNo=bus.getBusNo();
@@ -149,7 +147,7 @@ public class BusSeviceImpl implements BusService {
 	                    // If the route information is not available, handle it accordingly
 	                    throw new RuntimeException("Route information not available for bus with ID: " + bus.getId());
 	                }
-	                int cost = (int) route.getDistance() * 2;
+	                Double cost = bus.getPrice();
 	                double duration = (double) route.getDistance() * 1.5;
 	                String durationString = duration >= 60 ? (duration / 60) + "hr" : duration + "min";
 	                String busNo=bus.getBusNo();

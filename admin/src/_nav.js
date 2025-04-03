@@ -110,23 +110,20 @@ const _nav = [
   // -------------------------
   // (OPTIONAL) ROUTE SEGMENTS (пересадки)
   // -------------------------
+  
+  
   {
     component: CNavTitle,
-    name: 'Segments',
+    name: 'Users',
   },
   {
     component: CNavItem,
-    name: 'All Segments',
-    to: '/pages/segments',
-    icon: <FontAwesomeIcon icon={faRoute} className="nav-icon" />,
+    name: 'Clients',
+    to: '/pages/clients',
+    icon: <FontAwesomeIcon icon={faUserPlus} className="nav-icon" />,
   },
-  {
-    component: CNavItem,
-    name: 'Add Segment',
-    to: '/pages/addSegment',
-    icon: <FontAwesomeIcon icon={faRoute} className="nav-icon" />,
-  },
-
+  
+  
   {
     component: CNavTitle,
     name: 'Payment ',
