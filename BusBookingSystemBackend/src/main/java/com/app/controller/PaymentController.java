@@ -109,16 +109,19 @@ public class PaymentController {
 					.body(Map.of("error", "Payment verification failed"));
 		}
 	}
+
+
+
 	@PostMapping("/stripe")
 	public ResponseEntity<?> createStripeCheckoutSession(@RequestBody OrderRequest orderRequest) {
 		try {
-			// Инициализируем Stripe
 			Stripe.apiKey = stripeApiKey;
 
 			// Создаём параметры для сессии
 			SessionCreateParams params = SessionCreateParams.builder()
 					.addPaymentMethodType(SessionCreateParams.PaymentMethodType.CARD)
 					.setMode(SessionCreateParams.Mode.PAYMENT)
+					// Здесь нужно поставить свои URL success/cancel, доступные снаружи
 					.setSuccessUrl("https://buy.stripe.com/test_14kdTpc1saeB0a43cc/checkout/success?session_id={CHECKOUT_SESSION_ID}")
 					.setCancelUrl("https://buy.stripe.com/test_14kdTpc1saeB0a43cc/checkout/cancel")
 					.addLineItem(
@@ -127,7 +130,7 @@ public class PaymentController {
 									.setPriceData(
 											SessionCreateParams.LineItem.PriceData.builder()
 													.setCurrency("kzt")
-													// Преобразуем сумму в центы
+													// Умножаем на 100, если нужны тиыны
 													.setUnitAmount((long) orderRequest.getAmount() * 0)
 													.setProductData(
 															SessionCreateParams.LineItem.PriceData.ProductData.builder()
@@ -143,11 +146,14 @@ public class PaymentController {
 			// Создаём Stripe Checkout Session
 			Session session = Session.create(params);
 
-			// Возвращаем URL для перехода на страницу оплаты
-			return ResponseEntity.ok(Collections.singletonMap("checkoutUrl", session.getUrl()));
+			// Возвращаем URL
+			return ResponseEntity.ok(
+					Collections.singletonMap("checkoutUrl", session.getUrl())
+			);
 		} catch (StripeException e) {
 			e.printStackTrace();
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+			return ResponseEntity
+					.status(HttpStatus.INTERNAL_SERVER_ERROR)
 					.body(e.getMessage());
 		}
 	}
@@ -155,13 +161,12 @@ public class PaymentController {
 	@PostMapping("/stripe-verify")
 	public ResponseEntity<?> stripeVerifyPayment(@RequestBody BookingsDto requestBody) {
 		try {
-			// Можно дополнительно проверить реальный статус платежа через Stripe Webhook
-			// Но в упрощённом варианте просто вызываем:
+			// В упрощённом варианте не проверяем статус Stripe, а сразу создаём бронь
 			ApiResponse response = bookingService.addBooking(requestBody);
 
 			// Если нужно, разблокируем места
 			// ...
-			// return 200 OK
+
 			if (response.getStatus() == HttpStatus.CREATED) {
 				return ResponseEntity.ok(Map.of("success", true, "id", response.getId()));
 			} else {
@@ -170,10 +175,12 @@ public class PaymentController {
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+			return ResponseEntity
+					.status(HttpStatus.INTERNAL_SERVER_ERROR)
 					.body(Map.of("error", "Stripe payment verification failed"));
 		}
 	}
+
 
 //	@PostMapping("/refund")
 //    public ResponseEntity<?> initiateRefund(@RequestBody RefundRequest request) {

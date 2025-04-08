@@ -6,6 +6,7 @@ import { ToastContainer, toast } from 'react-toastify';
 import QRCode from 'qrcode';
 import jsPDF from 'jspdf';
 import {autoTable} from 'jspdf-autotable';
+import { useTranslation} from "react-i18next";
 
 function formatDateTime(dateTimeString) {
   const date = new Date(dateTimeString);
@@ -28,6 +29,7 @@ function formatDate(dateString) {
 function MyBookings() {
   const [data, setData] = useState([]);
   const { id } = useParams();
+  const {t, i18n} = useTranslation();
 
   useEffect(() => {
     const jwtToken = localStorage.getItem("jwtToken");
@@ -189,16 +191,16 @@ function MyBookings() {
       <div className="login_form_container">
         <div className="left">
           <div className="form_container">
-            <h1>Менің брондарым</h1>
+            <h1>{t("myBookings.title")}</h1>
             <table className="map_table">
               <thead>
                 <tr>
-                  <th>Автобус нөмірі</th>
-                  <th>Қайдан</th>
-                  <th>Қайда</th>
-                  <th>Брондау күні</th>
-                  <th>Тариф</th>
-                  <th>Билет жүктеу</th>
+                  <th>{t("myBookings.busNumber")}</th>
+                  <th>{t("myBookings.from")}</th>
+                  <th>{t("myBookings.to")}</th>
+                  <th>{t("myBookings.bookingDate")}</th>
+                  <th>{t("myBookings.fare")}</th>
+                  <th>{t("myBookings.download")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -210,7 +212,7 @@ function MyBookings() {
                     <td>{formatDate(location.bookingDateTime)}</td>
                     <td>{location.totalFare}</td>
                     <td>
-                      <button className='button download' onClick={() => downloadTicket(location.id)}>Билетті жүктеу</button>
+                      <button className='button download' onClick={() => downloadTicket(location.id)}>{t("myBookings.download")}</button>
                     </td>
                   </tr>
                 ))}

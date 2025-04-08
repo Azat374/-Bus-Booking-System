@@ -1,12 +1,14 @@
+
 import { useState } from "react";
 // import axios from "axios";
 import { Link } from "react-router-dom";
 import styles from "./styles.module.css";
 import { axiosInst } from "../../service/axiosInstance";
 import { toast } from "react-toastify";
+import { useTranslation} from "react-i18next";
 
 const Signup = () => {
-
+  const {t, i18n} = useTranslation();
 	const [data, setData] = useState({
 		firstName: "",
 		lastName: "",
@@ -67,19 +69,19 @@ const Signup = () => {
       <div className={styles.signup_container}>
         <div className={styles.signup_form_container}>
           <div className={styles.left}>
-            <h1>Welcome Back</h1>
+            <h1>{t("auth.welcomeBack")}</h1>
             <Link to="/login">
               <button type="button" className={styles.white_btn}>
-                Sign in
+                {t("auth.signIn")}
               </button>
             </Link>
           </div>
           <div className={styles.right}>
             <form className={styles.form_container} onSubmit={handleSubmit}>
-              <h1>Create Account</h1>
+              <h1>{t("auth.createAccount")}</h1>
               <input
                 type="text"
-                placeholder="First Name"
+                placeholder={t("auth.firstName")}
                 name="firstName"
                 onChange={handleChange}
                 value={data.firstName}
@@ -88,7 +90,7 @@ const Signup = () => {
               />
               <input
                 type="text"
-                placeholder="Last Name"
+                placeholder={t("auth.lastName")}
                 name="lastName"
                 onChange={handleChange}
                 value={data.lastName}
@@ -102,14 +104,14 @@ const Signup = () => {
                 required
                 className={styles.input}
               >
-                <option value="">Select Gender</option>
-                <option value="Male">Male</option>
-                <option value="Female">Female</option>
-                <option value="Others">Others</option>
+                <option value="">{t("auth.selectGender")}</option>
+                <option value="Male">{t("auth.male")}</option>
+                <option value="Female">{t("auth.female")}</option>
+                <option value="Others">{t("auth.other")}</option>
               </select>
               <input
                 type="number"
-                placeholder="Age"
+                placeholder={t("auth.age")}
                 name="age"
                 onChange={handleChange}
                 value={data.age}
@@ -118,7 +120,7 @@ const Signup = () => {
               />
               <input
                 type="tel"
-                placeholder="Mobile Number"
+                placeholder={t("auth.mobile")}
                 name="mobile"
                 onChange={handleChange}
                 value={data.mobile}
@@ -127,7 +129,7 @@ const Signup = () => {
               />
               <input
                 type="email"
-                placeholder="Email"
+                placeholder={t("auth.email")}
                 name="email"
                 onChange={handleChange}
                 value={data.email}
@@ -136,7 +138,7 @@ const Signup = () => {
               />
               <input
                 type="password"
-                placeholder="Password"
+                placeholder={t("auth.password")}
                 name="password"
                 onChange={handleChange}
                 value={data.password}
@@ -146,7 +148,7 @@ const Signup = () => {
               {error && <div className={styles.error_msg}>{error}</div>}
               {msg && <div className={styles.success_msg}>{msg}</div>}
               <button type="submit" className={styles.green_btn}>
-                Sign Up
+                {t("auth.signUp")}
               </button>
             </form>
           </div>

@@ -23,6 +23,15 @@ import org.springframework.http.HttpStatus;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 
+
+import org.jfree.chart.ChartFactory;
+import org.jfree.chart.JFreeChart;
+import org.jfree.data.category.DefaultCategoryDataset;
+import org.jfree.chart.plot.PlotOrientation;
+import org.jfree.chart.encoders.EncoderUtil;
+import org.jfree.chart.encoders.ImageFormat;
+
+
 import com.app.dto.ApiResponse;
 import com.app.dto.BookingDetailsDto;
 import com.app.dto.BookingsDto;
@@ -264,77 +273,133 @@ public class BookingServiceImpl implements BookingService {
         }
 	}
 
-	@Override
+
+
 	public byte[] generateFullReport() {
 		try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
-			Document document = new Document();
+			// Создаём документ формата A4 с отступами
+			Document document = new Document(PageSize.A4, 36, 36, 36, 36);
 			PdfWriter.getInstance(document, baos);
 			document.open();
 
 			// Загружаем шрифт с поддержкой кириллицы
 			BaseFont bf = BaseFont.createFont("fonts/arial.ttf", BaseFont.IDENTITY_H, BaseFont.EMBEDDED);
-			Font font = new Font(bf, 12, Font.NORMAL);
-			Font fontBold = new Font(bf, 20, Font.BOLD);
+			Font regularFont = new Font(bf, 12, Font.NORMAL);
+			Font boldFont = new Font(bf, 20, Font.BOLD);
+			Font sectionFont = new Font(bf, 14, Font.BOLD);
 
-			document.add(new Paragraph("Отчёт по системе бронирования", fontBold));
+			// Заголовок отчёта
+			Paragraph title = new Paragraph("Отчёт по системе бронирования", boldFont);
+			title.setAlignment(Element.ALIGN_CENTER);
+			document.add(title);
+
+			// Отделяем пустой строкой
 			document.add(Chunk.NEWLINE);
 
-			document.add(new Paragraph("1. Общая информация:", font));
-			document.add(new Paragraph("Всего пользователей: " + userDao.count(), font));
-			document.add(new Paragraph("Всего автобусов: " + busDao.count(), font));
-			document.add(new Paragraph("Всего бронирований: " + bookingDao.count(), font));
+			// Раздел 1: Общая информация
+			document.add(new Paragraph("1. Общая информация", sectionFont));
+			document.add(new Paragraph("Всего пользователей: " + userDao.count(), regularFont));
+			document.add(new Paragraph("Всего автобусов: " + busDao.count(), regularFont));
+			document.add(new Paragraph("Всего бронирований: " + bookingDao.count(), regularFont));
+			document.add(Chunk.NEWLINE);
 
-			document.add(new Paragraph("\n", font));
+			// Раздел 2: Водители
+			Paragraph driverSection = new Paragraph("2. Водители и заработок", sectionFont);
+			driverSection.setSpacingBefore(10f);
+			document.add(driverSection);
+			document.add(Chunk.NEWLINE);
 
-			// Таблица для водителей с заработком и часами
+			// Создаём таблицу для водителей
 			PdfPTable driverTable = new PdfPTable(6);
 			driverTable.setWidthPercentage(100);
-			addTableHeader(driverTable, new String[]{"ФИО", "Лицензия", "Автобус", "Телефон", "Доход за период", "Отработано часов"}, font);
+
+			addTableHeader(driverTable,
+					new String[]{"ФИО", "Лицензия", "Автобус", "Телефон", "Доход за период", "Отработано часов"},
+					regularFont
+			);
+
+			// Для диаграммы соберём данные о доходах
+			DefaultCategoryDataset dataset = new DefaultCategoryDataset();
 
 			driverDao.findAll().forEach(driver -> {
 				double earnings = bookingDao.findByDriverId(driver.getId())
 						.stream().mapToDouble(Bookings::getFare).sum();
-
 				long totalHours = busDao.findByDriverId(driver.getId())
-						.stream().mapToLong(bus -> Duration.between(bus.getStartTime(), bus.getEndTime()).toHours()).sum();
+						.stream().mapToLong(bus -> Duration.between(bus.getStartTime(), bus.getEndTime()).toHours())
+						.sum();
 
+				String fio = driver.getFirstName() + " " + driver.getLastName();
+				// Заполняем строку таблицы
 				addTableRow(driverTable, new String[]{
-						driver.getFirstName() + " " + driver.getLastName(),
+						fio,
 						driver.getLicenseNumber(),
-						driver.getBuses() != null && !driver.getBuses().isEmpty()
+						(driver.getBuses() != null && !driver.getBuses().isEmpty())
 								? driver.getBuses().stream().map(Bus::getBusNo).collect(Collectors.joining(", "))
 								: "Без автобуса",
 						driver.getPhoneNumber(),
-						String.valueOf(earnings),
+						String.format("%.2f", earnings),
 						String.valueOf(totalHours)
-				}, font);
+				}, regularFont);
+
+				// Заполняем данные для диаграммы
+				// (например, берем имя водителя как метку и его earnings как значение)
+				dataset.addValue(earnings, "Доход (валюта)", fio);
 			});
 
-			document.add(new Paragraph("Водители и заработок:", font));
-			document.add(new Paragraph("\n", font));
 			document.add(driverTable);
+			document.add(Chunk.NEWLINE);
 
-			document.add(new Paragraph("\n", font));
+			// Создаём диаграмму (вертикальная гистограмма)
+			JFreeChart barChart = ChartFactory.createBarChart(
+					"Заработок водителей",
+					"Водитель",
+					"Доход",
+					dataset,
+					PlotOrientation.VERTICAL,
+					false, // легенда
+					true,
+					false
+			);
+			// Преобразуем диаграмму в PNG и добавляем в PDF
+			ByteArrayOutputStream chartBaos = new ByteArrayOutputStream();
+			// Параметры (width, height) подбирайте в зависимости от желаемого размера
+			java.awt.image.BufferedImage chartImage = barChart.createBufferedImage(600, 400);
+			byte[] chartBytes = EncoderUtil.encode(chartImage, ImageFormat.PNG, true);
+			chartBaos.write(chartBytes);
 
-			// Таблица для автобусов и пройденного расстояния
+			Image chartImg = Image.getInstance(chartBaos.toByteArray());
+			chartImg.setAlignment(Element.ALIGN_CENTER);
+			chartImg.scaleToFit(500, 300); // масштабируем под страницу
+			document.add(chartImg);
+
+			// Раздел 3: Автобусы
+			Paragraph busSection = new Paragraph("3. Автобусы и километраж", sectionFont);
+			busSection.setSpacingBefore(20f);
+			document.add(busSection);
+			document.add(Chunk.NEWLINE);
+
 			PdfPTable busTable = new PdfPTable(3);
-			busTable.setWidthPercentage(150);
-			addTableHeader(busTable, new String[]{"Номер автобуса", "Маршрут", "Общий километраж"}, font);
+			busTable.setWidthPercentage(100);
+
+			addTableHeader(busTable,
+					new String[]{"Номер автобуса", "Маршрут", "Общий километраж"},
+					regularFont
+			);
 
 			busDao.findAll().forEach(bus -> {
 				int trips = bookingDao.countTripsByBusId(bus.getId());
 				double distance = bus.getRoute().getDistance();
 				addTableRow(busTable, new String[]{
 						bus.getBusNo(),
-						bus.getRoute().getStationIdBoarding().getStationName() + " - " + bus.getRoute().getStationIdDestination().getStationName(),
-						String.valueOf(trips * distance)
-				}, font);
+						bus.getRoute().getStationIdBoarding().getStationName() + " - " +
+								bus.getRoute().getStationIdDestination().getStationName(),
+						String.format("%.2f", trips * distance)
+				}, regularFont);
 			});
 
-			document.add(new Paragraph("Автобусы и километраж:", font));
-			document.add(new Paragraph("\n", font));
 			document.add(busTable);
 
+			// Закрываем документ
 			document.close();
 			return baos.toByteArray();
 
@@ -351,20 +416,24 @@ public class BookingServiceImpl implements BookingService {
 			PdfPCell cell = new PdfPCell(new Phrase(header, font));
 			cell.setBackgroundColor(BaseColor.LIGHT_GRAY);
 			cell.setHorizontalAlignment(Element.ALIGN_CENTER);
+			cell.setPadding(5f);
 			table.addCell(cell);
 		}
 	}
 
 	/**
-	 * Метод для добавления строк в таблицу
+	 * Метод для добавления одной строки в таблицу
 	 */
-	private void addTableRow(PdfPTable table, String[] data, Font font) {
-		for (String value : data) {
-			PdfPCell cell = new PdfPCell(new Phrase(value, font));
+	private void addTableRow(PdfPTable table, String[] values, Font font) {
+		for (String val : values) {
+			PdfPCell cell = new PdfPCell(new Phrase(val, font));
 			cell.setHorizontalAlignment(Element.ALIGN_CENTER);
+			cell.setPadding(4f);
 			table.addCell(cell);
 		}
 	}
+
+
 
 
 }

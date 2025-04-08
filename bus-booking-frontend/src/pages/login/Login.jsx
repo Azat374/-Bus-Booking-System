@@ -1,3 +1,4 @@
+
 // import { useState } from "react";
 // import { Link } from "react-router-dom";
 // import styles from "./styles.module.css";
@@ -90,10 +91,11 @@ import { Link } from "react-router-dom";
 import styles from "./styles.module.css";
 import { axiosInst } from "../../service/axiosInstance";
 import { ToastContainer, toast } from "react-toastify";
-
+import { useTranslation} from "react-i18next";
 const Login = () => {
   const [data, setData] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
+  const {t, i18n} = useTranslation();
 
   useEffect(() => {
     // Check if jwtToken exists in localStorage
@@ -138,7 +140,7 @@ const Login = () => {
         <div className={styles.login_form_container}>
           <div className={styles.left}>
             <form className={styles.form_container} onSubmit={handleSubmit}>
-              <h1>Login to Your Account</h1>
+              <h1>{t("auth.loginTitle")}</h1>
               <input
                 type="email"
                 placeholder="Email"
@@ -159,17 +161,17 @@ const Login = () => {
               />
               {error && <div className={styles.error_msg}>{error}</div>}
               <button type="submit" className={styles.green_btn}>
-                Sign In
+                {t("auth.signIn")}
               </button>
-              <Link to="/forgot-password">Forgot Password?</Link>
+              <Link to="/forgot-password">{t("auth.forgot")}</Link>
              
             </form>
           </div>
           <div className={styles.right}>
-            <h1>New Here?</h1>
+            <h1>{t("auth.newHere")}</h1>
             <Link to="/signup">
               <button type="button" className={styles.white_btn}>
-                Sign Up
+                {t("auth.signUp")}
               </button>
             </Link>
           </div>

@@ -4,6 +4,7 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 const Search = () => {
   const navigate = useNavigate();
@@ -33,7 +34,7 @@ const Search = () => {
     ],
   }
   const [classes, setClass] = "ECONOMY";
-
+  const { t, i18n } = useTranslation();
 
   // Загрузка списка станций при монтировании
   useEffect(() => {
@@ -129,7 +130,7 @@ const Search = () => {
           {/* FROM */}
           <div>
             <label htmlFor="from" className="block mb-2 font-semibold">
-              Қайдан
+              {t("search.from")}
             </label>
             <select
               name="from"
@@ -150,7 +151,7 @@ const Search = () => {
           {/* TO */}
           <div>
             <label htmlFor="to" className="block mb-2 font-semibold">
-              Қайда
+              {t("search.to")}
             </label>
             <select
               name="to"
@@ -171,7 +172,7 @@ const Search = () => {
           {/* DATE */}
           <div>
             <label htmlFor="date" className="block mb-2 font-semibold">
-              Күні
+              {t("search.date")}
             </label>
             <input
               type="date"
@@ -186,7 +187,7 @@ const Search = () => {
           {/* TIME (опционально) */}
           <div>
             <label htmlFor="time" className="block mb-2 font-semibold">
-              Класс
+              {t("search.class")}
             </label>
             <select
               name="class"
@@ -218,7 +219,7 @@ const Search = () => {
               className="w-full px-4 h-12 bg-violet-600 text-white rounded-md hover:bg-violet-700"
               onClick={search}
             >
-              Іздеу
+              {t("search.search")}
             </button>
           </div>
         </div>
@@ -227,7 +228,7 @@ const Search = () => {
       {/* Список результатов */}
       <div className="mt-10">
         {noBusesFound ? (
-          <p className="text-center text-red-500 text-lg">No buses found</p>
+          <p className="text-center text-red-500 text-lg">{t("search.noBuses")}</p>
         ) : (
           // Вот здесь стилизуем карточки автобусов красиво
           <div className="space-y-4">
@@ -247,10 +248,10 @@ const Search = () => {
                   </p>
                   {/* Стоимость и кол-во мест */}
                   <p className="text-sm mt-2">
-                    Cost: {bus.cost} / per seat
+                    {t("search.cost")}: {bus.cost} / per seat
                   </p>
                   <p className="text-sm text-green-600">
-                    {bus.availableSeats} seats available
+                    {bus.availableSeats} {t("search.availableSeats")}
                   </p>
                 </div>
 
@@ -259,7 +260,7 @@ const Search = () => {
                   className="bg-gray-800 hover:bg-gray-900 text-white px-4 py-2 rounded text-sm"
                   onClick={() => handleBookNow(bus.id)}
                 >
-                  Reserve Seat
+                  {t("search.reserve")}
                 </button>
               </div>
             ))}

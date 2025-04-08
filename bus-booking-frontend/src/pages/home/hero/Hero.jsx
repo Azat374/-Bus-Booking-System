@@ -1,6 +1,7 @@
 import { animate, delay, motion } from "framer-motion";
 import React from "react";
 import Bus2 from "../../../assets/images/bus5.png";
+import { useTranslation } from 'react-i18next';
 
 const Hero = () => {
   const imageVariants = {
@@ -15,6 +16,9 @@ const Hero = () => {
       },
     },
   };
+
+  const { t, i18n } = useTranslation();
+  
   return (
     <div className="w-full h-[calc(100vh-8ch)] lg:ps-28 md:ps-16 sm:ps-7 ps-4 mt-[8ch] flex items-center justify-center flex-col hero relative">
       <div className="flex-1 w-full flex items-stretch justify-between gap-12 pb-10">
@@ -37,9 +41,9 @@ const Hero = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 2, ease: "linear", delay: 0.4 }}
             >
-              Автобус билеттеріңізді дәл 
-              <span className="text-violet-400 tracking-wider"> қазір </span>
-               брондаңыз
+              {t("hero.title")}
+              <span className="text-violet-400 tracking-wider"> {t("hero.now")} </span>
+               
             </motion.h1>
 
             <motion.p
@@ -48,8 +52,7 @@ const Hero = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 2, ease: "linear", delay: 0.6 }}
             >
-              Бар болғаны бірнеше рет басып, қажетті бағытыңыз бен уақытты 
-              таңдаңыз — сіздің сапарыңыз бұрын-соңды болмағандай оңай болмақ.
+              {t("hero.description")}
             </motion.p>
           </motion.dev>
           

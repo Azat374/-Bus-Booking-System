@@ -17,7 +17,7 @@ import "react-responsive-modal/styles.css";
 import "jspdf-autotable";
 
 import Bus from "../../assets/images/bus9.png"; // Пример пути к картинке автобуса
-
+import { useTranslation } from "react-i18next";
 // Вспомогательные функции форматирования
 function formatDateTime(dateTimeString) {
   const date = new Date(dateTimeString);
@@ -59,6 +59,7 @@ export default function BusLayout() {
     from: "",
     to: "",
   });
+  const {t, i18n} = useTranslation();
 
   // Для простоты
   let totalSeats = 41; // Ваш расклад на 41 место
@@ -293,7 +294,7 @@ doc.save(`Dimash_Bus_${ticketid}_.pdf`);
 
       const options = {
         key: "rzp_test_bTDnw950m7Mzb4",
-        currency: KZT,
+        currency: data.currency,
         amount: data.amount,
         name: "Dimash Bus",
         description: "Dimash Bus Booking",
@@ -523,38 +524,37 @@ doc.save(`Dimash_Bus_${ticketid}_.pdf`);
             alt="bus"
             className="w-full aspect-[3/2] rounded-md object-contain"
           />
-
           <div className="border rounded-md p-4 bg-neutral-100 dark:bg-neutral-900/60">
-            <h2 className="text-xl font-semibold mb-2">Саяхат туралы ақпарат</h2>
+            <h2 className="text-xl font-semibold mb-2">{t("layout.travelInfo")}</h2>
             <p className="text-base text-neutral-800 dark:text-neutral-300">
-              <span className="font-medium">Автобус нөмірі:</span> {travelInfo.busNo}
+              <span className="font-medium">{t("layout.busNumber")}:</span> {travelInfo.busNo}
             </p>
             <p className="flex items-center justify-between mt-2">
               <span>
-                <span className="font-medium">Қайдан:</span> {travelInfo.from}
+                <span className="font-medium">{t("layout.from")}:</span> {travelInfo.from}
               </span>
               <span>
-                <span className="font-medium">Қайда:</span> {travelInfo.to}
+                <span className="font-medium">{t("layout.to")}:</span> {travelInfo.to}
               </span>
             </p>
             <p className="flex items-center justify-between mt-2">
               <span>
-                <span className="font-medium">Шығу уақыты:</span>{" "}
+                <span className="font-medium">{t("layout.startTime")}:</span>{" "}
                 {convertToValidDateTimeFormat(travelInfo.startTime)}
               </span>
               <span>
-                <span className="font-medium">Аяқталу уақыты:</span>{" "}
+                <span className="font-medium">{t("layout.endTime")}:</span>{" "}
                 {convertToValidDateTimeFormat(travelInfo.endTime)}
               </span>
             </p>
             <p className="mt-2">
-              <span className="font-medium">Жалпы уақыт:</span>{" "}
+              <span className="font-medium">{t("layout.totalTime")}:</span>{" "}
               {calculateTotalTime(travelInfo.startTime, travelInfo.endTime)}
             </p>
           </div>
 
           <div className="border rounded-md p-4 bg-neutral-100 dark:bg-neutral-900/60">
-            <h2 className="text-xl font-semibold mb-3">Жолаушы мәліметтері</h2>
+            <h2 className="text-xl font-semibold mb-3">{t("layout.passengerDetails")}</h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               {passengerDetails.map((passenger) => (
                 <div
@@ -562,7 +562,7 @@ doc.save(`Dimash_Bus_${ticketid}_.pdf`);
                   className="border-b border-neutral-300 pb-3 mb-3"
                 >
                   <p className="font-medium mb-2">
-                    Орын {passenger.seatNumber}
+                    {t("layout.seat")} {passenger.seatNumber}
                   </p>
                   <div className="flex gap-3 mb-2">
                     <input
@@ -571,7 +571,7 @@ doc.save(`Dimash_Bus_${ticketid}_.pdf`);
                       onChange={(event) =>
                         handleInputChange(event, passenger.seatNumber, "firstName")
                       }
-                      placeholder="First Name"
+                      placeholder={t("auth.firstName")}
                       className="flex-1 px-3 py-2 rounded-md border border-neutral-300 focus:outline-none"
                     />
                     <input
@@ -580,7 +580,7 @@ doc.save(`Dimash_Bus_${ticketid}_.pdf`);
                       onChange={(event) =>
                         handleInputChange(event, passenger.seatNumber, "lastName")
                       }
-                      placeholder="Last Name"
+                      placeholder={t("auth.lastName")}
                       className="flex-1 px-3 py-2 rounded-md border border-neutral-300 focus:outline-none"
                     />
                   </div>
@@ -591,7 +591,7 @@ doc.save(`Dimash_Bus_${ticketid}_.pdf`);
                       onChange={(event) =>
                         handleInputChange(event, passenger.seatNumber, "age")
                       }
-                      placeholder="Age"
+                      placeholder={t("auth.age")}
                       min="0"
                       className="flex-1 px-3 py-2 rounded-md border border-neutral-300 focus:outline-none"
                     />
@@ -602,10 +602,10 @@ doc.save(`Dimash_Bus_${ticketid}_.pdf`);
                       }
                       className="flex-1 px-3 py-2 rounded-md border border-neutral-300 focus:outline-none"
                     >
-                      <option value="">Жыныс</option>
-                      <option value="Male">Еркек</option>
-                      <option value="Female">Әйел</option>
-                      <option value="Other">Өзге</option>
+                      <option value="">{t("layout.genderPlaceholder")}</option>
+                      <option value="Male">{t("layout.male")}</option>
+                      <option value="Female">{t("layout.female")}</option>
+                      <option value="Other">{t("layout.other")}</option>
                     </select>
                   </div>
                 </div>
@@ -621,13 +621,13 @@ doc.save(`Dimash_Bus_${ticketid}_.pdf`);
                       : "bg-violet-600 hover:bg-violet-700"
                   }`}
               >
-                Билетті брондау
+                {t("layout.bookTicket")}
               </button>
             </form>
 
             {bookingSuccess && (
               <div className="bg-green-500 text-white p-3 rounded-md mt-4 text-center">
-                Брондау сәтті аяқталды!
+                {t("layout.bookingSuccess")}
               </div>
             )}
           </div>
@@ -636,7 +636,7 @@ doc.save(`Dimash_Bus_${ticketid}_.pdf`);
         {/* Правая часть (выбор мест) */}
         <div className="col-span-1 space-y-8">
           <div className="border rounded-md p-4 bg-neutral-100 dark:bg-neutral-900/60">
-            <h2 className="text-xl font-semibold mb-3">Орындарыңызды таңдаңыз</h2>
+            <h2 className="text-xl font-semibold mb-3">{t("layout.selectSeats")}</h2>
 
             {/* =========== СЕТКА С МЕСТАМИ =========== */}
             <div className="w-full flex justify-between">
@@ -681,21 +681,21 @@ doc.save(`Dimash_Bus_${ticketid}_.pdf`);
                 <div className="flex items-center gap-x-2">
                   <MdOutlineChair className="text-lg text-neutral-500 -rotate-90" />
                   <p className="text-neutral-900 dark:text-neutral-200 text-sm font-normal">
-                    Available
+                    {t("layout.available")}
                   </p>
                 </div>
                 {/* Booked */}
                 <div className="flex items-center gap-x-2">
                   <MdOutlineChair className="text-lg text-red-500 -rotate-90" />
                   <p className="text-neutral-900 dark:text-neutral-200 text-sm font-normal">
-                    Booked
+                    {t("layout.booked")}
                   </p>
                 </div>
                 {/* Selected */}
                 <div className="flex items-center gap-x-2">
                   <MdOutlineChair className="text-lg text-violet-500 -rotate-90" />
                   <p className="text-neutral-900 dark:text-neutral-200 text-sm font-normal">
-                    Selected
+                    {t("layout.selected")}
                   </p>
                 </div>
                 {/* Price Info */}
@@ -728,7 +728,7 @@ doc.save(`Dimash_Bus_${ticketid}_.pdf`);
             {/* Итоговая цена */}
             {selectedSeats.length > 0 && (
               <div className="mt-5 flex items-center gap-x-4">
-                <h3 className="text-lg font-bold">Толық баға:</h3>
+                <h3 className="text-lg font-bold">{t("layout.totalFare")}:</h3>
                 <p className="text-lg font-medium">
                   {selectedSeats.length * 250} KZT
                 </p>

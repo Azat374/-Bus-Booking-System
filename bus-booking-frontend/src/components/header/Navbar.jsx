@@ -13,6 +13,7 @@ import { FaBars } from 'react-icons/fa6'
 import Theme from '../theme/Theme'
 import ProfileCard from '../profileCard/ProfileCard'
 import Logo from "../../assets/images/logo.png"
+import { useTranslation } from 'react-i18next';
 
 const Navbar = () => {
   const [jwtToken, setJwtToken] = useState(localStorage.getItem('jwtToken'))
@@ -20,7 +21,7 @@ const Navbar = () => {
 
   const [openMenu, setOpenMenu] = useState(false)        // мобильное меню
   const [showProfile, setShowProfile] = useState(false)  // модалка профиля
-
+  const { t, i18n } = useTranslation();
   // Обработка клика по иконке-бургеру
   const handleToggleMenu = () => {
     setOpenMenu(!openMenu)
@@ -88,7 +89,7 @@ const Navbar = () => {
               onClick={handleCloseMenu}
               className="hover:text-violet-600 ease-in-out duration-300"
             >
-              Брондау
+              {t('booking')}
             </Link>
           </li>
           {jwtToken && (
@@ -98,7 +99,7 @@ const Navbar = () => {
                 onClick={handleCloseMenu}
                 className="hover:text-violet-600 ease-in-out duration-300"
               >
-                Менің брондарым
+                {t('myBooking')}
               </Link>
             </li>
           )}
@@ -132,13 +133,13 @@ const Navbar = () => {
                 className="bg-violet-600 rounded-md px-3 py-2 w-fit text-neutral-50 flex items-center gap-x-1"
               >
                 <CgProfile className="text-lg" />
-                Профиль
+                {t('profile')}
               </button>
               <button
                 onClick={handleLogout}
                 className="bg-red-500 rounded-md px-3 py-2 w-fit text-neutral-50"
               >
-                Шығу
+                {t('logout')}
               </button>
             </div>
           ) : (
@@ -148,12 +149,15 @@ const Navbar = () => {
               onClick={handleCloseMenu}
               className="bg-violet-600 rounded-md px-3 py-2 w-fit text-neutral-50"
             >
-              Кіру
+              {t('login')}
             </Link>
           )}
 
           {/* Переключатель темы */}
           <Theme />
+          <button onClick={() => i18n.changeLanguage("kz")}>KZ</button>
+          <button onClick={() => i18n.changeLanguage("ru")}>RU</button>
+          <button onClick={() => i18n.changeLanguage("en")}>EN</button>
         </div>
       </div>
 
