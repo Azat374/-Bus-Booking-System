@@ -5,7 +5,7 @@ import { faTrash, faEdit } from "@fortawesome/free-solid-svg-icons";
 import { axiosInst } from "src/axiosInstance";
 import { toast,Toaster } from "react-hot-toast"; // Import Toaster from react-hot-toast
 import 'react-toastify/dist/ReactToastify.css';
-
+import { useTranslation } from "react-i18next";
 function AllRoutes() {
     const [routes, setRoutes] = useState([]);
     const [showEditModal, setShowEditModal] = useState(false);
@@ -16,7 +16,7 @@ function AllRoutes() {
         stationIdFrom: "",
         stationIdTo: ""
     });
-
+    const { t } = useTranslation();
     useEffect(() => {
         // Fetch all stations
         axiosInst
@@ -121,15 +121,15 @@ function AllRoutes() {
 
     return (
         <div>
-        <h2>All Routes</h2>
+        <h2>{t("route.title")}</h2>
         <Table striped bordered hover>
             <thead>
                 <tr>
-                    <th>Route Id</th>
-                    <th>Distance</th>
-                    <th>Boarding</th>
-                    <th>Destination</th>
-                    <th>Action</th>
+                    <th>{t("route.id")}</th>
+                    <th>{t("route.distance")}</th>
+                    <th>{t("route.from")}</th>
+                    <th>{t("route.to")}</th>
+                    <th>{t("route.actions")}</th>
                 </tr>
             </thead>
             <tbody>
@@ -160,12 +160,12 @@ function AllRoutes() {
 
         <Modal show={showEditModal} onHide={handleCloseEditModal}>
             <Modal.Header closeButton>
-                <Modal.Title>Edit Route</Modal.Title>
+                <Modal.Title>{t("route.edit")}</Modal.Title>
             </Modal.Header>
             <Modal.Body>
                 <Form>
                     <Form.Group controlId="formDistance">
-                        <Form.Label>Distance</Form.Label>
+                        <Form.Label>{t("route.distance")}</Form.Label>
                         <Form.Control
                             type="text"
                             placeholder="Enter distance"
@@ -176,7 +176,7 @@ function AllRoutes() {
                     </Form.Group>
 
                     <Form.Group controlId="formFrom">
-                        <Form.Label>Boarding</Form.Label>
+                        <Form.Label>{t("route.from")}</Form.Label>
                         <Form.Control
                             as="select"
                             name="stationIdFrom"
@@ -192,7 +192,7 @@ function AllRoutes() {
                     </Form.Group>   
 
                     <Form.Group controlId="formTo">
-                        <Form.Label>Destination</Form.Label>
+                        <Form.Label>{t("route.to")}</Form.Label>
                         <Form.Control
                             as="select"
                             name="stationIdTo"
@@ -210,10 +210,10 @@ function AllRoutes() {
             </Modal.Body>
             <Modal.Footer>
                 <Button variant="secondary" onClick={handleCloseEditModal}>
-                    Close
+                    {t("buttons.close")}
                 </Button>
                 <Button variant="primary" onClick={handleSaveEdit}>
-                    Save Changes
+                    {t("buttons.save")}
                 </Button>
             </Modal.Footer>
         </Modal>

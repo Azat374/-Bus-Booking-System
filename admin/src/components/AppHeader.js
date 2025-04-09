@@ -13,6 +13,7 @@ import {
 import CIcon from '@coreui/icons-react';
 import { cilMenu } from '@coreui/icons';
 import { AppHeaderDropdown } from './header/index';
+import LanguageSwitcher from './LanguageSwitcher';
 
 const AppHeader = () => {
   const dispatch = useDispatch();
@@ -37,6 +38,7 @@ const AppHeader = () => {
             </CNavLink>
           </CNavItem>
         </CHeaderNav>
+        <LanguageSwitcher/>
         <CHeaderNav className="ms-3">
           <AppHeaderDropdown />
         </CHeaderNav>

@@ -4,12 +4,13 @@ import { CSidebar, CSidebarBrand, CSidebarNav, CSidebarToggler } from '@coreui/r
 import { AppSidebarNav } from './AppSidebarNav';
 import SimpleBar from 'simplebar-react';
 import 'simplebar/dist/simplebar.min.css';
-import navigation from '../_nav';
+import useNav from '../_nav';
 
 const AppSidebar = () => {
   const dispatch = useDispatch();
   const unfoldable = useSelector((state) => state.sidebarUnfoldable);
   const sidebarShow = useSelector((state) => state.sidebarShow);
+  const navItems = useNav();
 
   return (
     <CSidebar
@@ -27,7 +28,7 @@ const AppSidebar = () => {
       </CSidebarBrand>
       <CSidebarNav>
         <SimpleBar>
-          <AppSidebarNav items={navigation} />
+          <AppSidebarNav items={navItems} />
         </SimpleBar>
       </CSidebarNav>
     </CSidebar>

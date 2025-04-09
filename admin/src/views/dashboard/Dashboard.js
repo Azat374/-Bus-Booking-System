@@ -11,10 +11,14 @@ import {
 } from '@coreui/react'
 import { cilCloudDownload } from '@coreui/icons'
 
+import { CCard, CCardBody, CCardHeader } from '@coreui/react';
+
+import { useTranslation } from "react-i18next";
 
 const Dashboard = () => {
   const random = (min, max) => Math.floor(Math.random() * (max - min + 1) + min)
-
+  const { t } = useTranslation();
+  
     const handleDownloadGeneralReport = async () => {
       try {
         const response = await axiosInst.get("/bookings/report/general", {
@@ -58,7 +62,7 @@ const Dashboard = () => {
         onClick={handleDownloadGeneralReport}
       >
         <CIcon icon={cilCloudDownload} className="me-2" />
-        Скачать отчёт PDF
+        {t("downloadReport")}
       </CButton>
     </>
   )

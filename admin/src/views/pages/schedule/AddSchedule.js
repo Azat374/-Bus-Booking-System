@@ -2,14 +2,14 @@ import React, { useState, useEffect } from "react";
 import { Form, Button } from "react-bootstrap";
 import { axiosInst } from "src/axiosInstance";
 import { toast } from "react-hot-toast";
-
+import { useTranslation } from "react-i18next";
 const AddSchedule = () => {
   const [buses, setBuses] = useState([]);
   const [busId, setBusId] = useState("");
   const [dayOfMonth, setDayOfMonth] = useState("");
   const [departureTime, setDepartureTime] = useState("");
   const [active, setActive] = useState(true);
-
+  const { t } = useTranslation();
   useEffect(() => {
     fetchAllBuses();
   }, []);
@@ -54,16 +54,16 @@ const AddSchedule = () => {
 
   return (
     <div>
-      <h3>Add Schedule</h3>
+      <h3>{t("schedule.addTitle")}</h3>
       <Form onSubmit={handleSubmit} style={{ maxWidth: "400px" }}>
         <Form.Group className="mb-2">
-          <Form.Label>Bus</Form.Label>
+          <Form.Label>{t("schedule.bus")}</Form.Label>
           <Form.Select
             value={busId}
             onChange={(e) => setBusId(e.target.value)}
             required
           >
-            <option value="">-- Select Bus --</option>
+            <option value="">-- {t("schedule.selectBus")} --</option>
             {buses.map((bus) => (
               <option key={bus.id} value={bus.id}>
                 {bus.busNo} (ID: {bus.id})
@@ -73,7 +73,7 @@ const AddSchedule = () => {
         </Form.Group>
 
         <Form.Group className="mb-2">
-          <Form.Label>Day of Month</Form.Label>
+          <Form.Label>{t("schedule.dayOfMonth")}</Form.Label>
           <Form.Control
             type="number"
             min={1}
@@ -85,7 +85,7 @@ const AddSchedule = () => {
         </Form.Group>
 
         <Form.Group className="mb-2">
-          <Form.Label>Departure Time</Form.Label>
+          <Form.Label>{t("schedule.departureTime")}</Form.Label>
           <Form.Control
             type="time"
             value={departureTime}
@@ -103,7 +103,7 @@ const AddSchedule = () => {
           />
         </Form.Group>
 
-        <Button type="submit">Add Schedule</Button>
+        <Button type="submit">{t("schedule.addBtn")}</Button>
       </Form>
     </div>
   );

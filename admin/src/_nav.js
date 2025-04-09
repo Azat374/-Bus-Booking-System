@@ -1,142 +1,120 @@
 import React from 'react'
 import CIcon from '@coreui/icons-react'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCity } from '@fortawesome/free-solid-svg-icons';
-import { faBus } from '@fortawesome/free-solid-svg-icons';
-import { faRoute, faUsers, faUserPlus } from '@fortawesome/free-solid-svg-icons';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faCity, faBus, faRoute, faUsers, faUserPlus } from '@fortawesome/free-solid-svg-icons'
 import {
-
   cilPencil,
-
   cilSpeedometer,
-  cilBank,
-
+  cilBank
 } from '@coreui/icons'
-import {  CNavItem, CNavTitle } from '@coreui/react'
+import { CNavItem, CNavTitle } from '@coreui/react'
+import { useTranslation } from 'react-i18next'
 
-const _nav = [
-  {
-    component: CNavItem,
-    name: 'Dashboard',
-    to: '/dashboard',
-    icon: <CIcon icon={cilSpeedometer} customClassName="nav-icon" />,
-  },
-  {
-    component: CNavTitle,
-    name: 'Station ',
-  },
-  {
-    component: CNavItem,
-    name: 'Add Station',
-    to: '/pages/station',
-    icon: <FontAwesomeIcon icon={faCity}  className="nav-icon"/>
-    ,
-  },
-  { 
-    component: CNavItem,
-    name: 'All Stations',
-    to: '/pages/stations',
-    icon: <FontAwesomeIcon icon={faCity}  className="nav-icon"/>,
-  },
+const useNav = () => {
+  const { t } = useTranslation()
 
+  return [
+    {
+      component: CNavItem,
+      name: t('dashboard'),
+      to: '/dashboard',
+      icon: <CIcon icon={cilSpeedometer} customClassName="nav-icon" />,
+    },
+    {
+      component: CNavTitle,
+      name: t('stations'),
+    },
+    {
+      component: CNavItem,
+      name: t('station.add'),
+      to: '/pages/station',
+      icon: <FontAwesomeIcon icon={faCity} className="nav-icon" />,
+    },
+    {
+      component: CNavItem,
+      name: t('station.all'),
+      to: '/pages/stations',
+      icon: <FontAwesomeIcon icon={faCity} className="nav-icon" />,
+    },
+    {
+      component: CNavTitle,
+      name: t('routes'),
+    },
+    {
+      component: CNavItem,
+      name: t('route.add'),
+      to: '/pages/addRoute',
+      icon: <FontAwesomeIcon icon={faRoute} className="nav-icon" />,
+    },
+    {
+      component: CNavItem,
+      name: t('route.title'),
+      to: '/pages/routes',
+      icon: <FontAwesomeIcon icon={faRoute} className="nav-icon" />,
+    },
+    {
+      component: CNavTitle,
+      name: t('bus'),
+    },
+    {
+      component: CNavItem,
+      name: t('buses.add'),
+      to: '/pages/addBus',
+      icon: <FontAwesomeIcon icon={faBus} className="nav-icon" />,
+    },
+    {
+      component: CNavItem,
+      name: t('buses.all'),
+      to: '/pages/allBuses',
+      icon: <CIcon icon={cilPencil} customClassName="nav-icon" />,
+    },
+    {
+      component: CNavTitle,
+      name: t('drivers.title'),
+    },
+    {
+      component: CNavItem,
+      name: t('drivers.all'),
+      to: '/pages/drivers',
+      icon: <FontAwesomeIcon icon={faUsers} className="nav-icon" />,
+    },
+    {
+      component: CNavTitle,
+      name: t('schedule.title'),
+    },
+    {
+      component: CNavItem,
+      name: t('schedule.all'),
+      to: '/pages/schedules',
+      icon: <FontAwesomeIcon icon={faRoute} className="nav-icon" />,
+    },
+    {
+      component: CNavItem,
+      name: t('schedule.addTitle'),
+      to: '/pages/addSchedule',
+      icon: <FontAwesomeIcon icon={faRoute} className="nav-icon" />,
+    },
+    {
+      component: CNavTitle,
+      name: t('clients.title'),
+    },
+    {
+      component: CNavItem,
+      name: t('clients.title'),
+      to: '/pages/clients',
+      icon: <FontAwesomeIcon icon={faUserPlus} className="nav-icon" />,
+    },
+    {
+      component: CNavTitle,
+      name: 'Payment',
+    },
+    {
+      component: CNavItem,
+      name: t('payments'),
+      to: '/pages/payments',
+      icon: <CIcon icon={cilBank} customClassName="nav-icon" />,
+    }
+  ]
+}
 
-  {
-    component: CNavTitle,
-    name: 'Routes ',
-  },
-  {
-    component: CNavItem,
-    name: 'Add Route  ',
-    to: '/pages/addRoute',
-    icon: <FontAwesomeIcon icon={faRoute}  className="nav-icon"/>
-    ,
-  },
-  { 
-    component: CNavItem,
-    name: 'All Routes',
-    to: '/pages/routes',
-    icon: <FontAwesomeIcon icon={faRoute}  className="nav-icon"/>,
-  },
-
-
-  {
-    component: CNavTitle,
-    name: 'Bus ',
-  },
-  {
-    component: CNavItem,
-    name: 'Add Bus',
-    to: '/pages/addBus',
-    icon: <FontAwesomeIcon icon={faBus}  className="nav-icon"/>,
-  },
-
-  
-  {
-    component: CNavItem,
-    name: 'All/Delete Buses',
-    to: '/pages/allBuses',
-    icon: <CIcon icon={cilPencil} customClassName="nav-icon" />,
-  },
-
-  {
-    component: CNavTitle,
-    name: 'Drivers',
-  },
-  {
-    component: CNavItem,
-    name: 'All Drivers',
-    to: '/pages/drivers',
-    icon: <FontAwesomeIcon icon={faUsers} className="nav-icon"/>,
-  },
-  
-  
-  {
-    component: CNavTitle,
-    name: 'Schedule',
-  },
-  {
-    component: CNavItem,
-    name: 'All Schedules',
-    to: '/pages/schedules',
-    icon: <FontAwesomeIcon icon={faRoute} className="nav-icon" />, // используйте любой
-  },
-  {
-    component: CNavItem,
-    name: 'Add Schedule',
-    to: '/pages/addSchedule',
-    icon: <FontAwesomeIcon icon={faRoute} className="nav-icon" />,
-  },
-
-  // -------------------------
-  // (OPTIONAL) ROUTE SEGMENTS (пересадки)
-  // -------------------------
-  
-  
-  {
-    component: CNavTitle,
-    name: 'Users',
-  },
-  {
-    component: CNavItem,
-    name: 'Clients',
-    to: '/pages/clients',
-    icon: <FontAwesomeIcon icon={faUserPlus} className="nav-icon" />,
-  },
-  
-  
-  {
-    component: CNavTitle,
-    name: 'Payment ',
-  },
-  
-  
-  {
-    component: CNavItem,
-    name: 'Payments',
-    to: '/pages/payments',
-    icon: <CIcon icon={cilBank} customClassName="nav-icon" />,
-  }
-  
-]
-
-export default _nav
+export default useNav

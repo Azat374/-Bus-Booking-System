@@ -3,6 +3,7 @@ package com.app.dto;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+import com.app.entities.BusClass;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -20,6 +21,6 @@ public class GetBusDto {
 	private LocalDate date;
 	private LocalDateTime startTime;
 	private LocalDateTime endTime;
-	
+	private BusClass busClass;
 
 }

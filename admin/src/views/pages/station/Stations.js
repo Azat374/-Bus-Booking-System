@@ -14,10 +14,11 @@ import {
   CTableHeaderCell,
   CTableRow,
 } from "@coreui/react";
-
+import { useTranslation } from "react-i18next";
+import { t } from "i18next";
 const EditStationPopup = ({ show, handleClose, stationId, stationName }) => {
   const [editedStationName, setEditedStationName] = useState("");
-
+  const { t } = useTranslation();
   useEffect(() => {
     setEditedStationName(stationName);
   }, [stationName]);
@@ -51,7 +52,7 @@ const EditStationPopup = ({ show, handleClose, stationId, stationName }) => {
   return (
     <Modal show={show} onHide={handleClose}>
       <Modal.Header closeButton>
-        <Modal.Title>Edit Station</Modal.Title>
+        <Modal.Title>{t("station.edit")}</Modal.Title>
       </Modal.Header>
       <Modal.Body>
         <input
@@ -64,10 +65,10 @@ const EditStationPopup = ({ show, handleClose, stationId, stationName }) => {
       </Modal.Body>
       <Modal.Footer>
         <Button variant="secondary" onClick={handleClose}>
-          Close
+          {t("buttons.close")}
         </Button>
         <Button variant="primary" onClick={handleUpdateStation}>
-          Save Changes
+          {t("buttons.save")}
         </Button>
       </Modal.Footer>
     </Modal>
@@ -151,9 +152,9 @@ const Stations = () => {
         <CTable align="middle" className="mb-0 border" hover responsive>
           <CTableHead color="light">
             <CTableRow>
-              <CTableHeaderCell className="text-center">Index</CTableHeaderCell>
-              <CTableHeaderCell>Station Name</CTableHeaderCell>
-              <CTableHeaderCell>Actions</CTableHeaderCell>
+              <CTableHeaderCell className="text-center">{t("station.index")}</CTableHeaderCell>
+              <CTableHeaderCell>{t("station.name")}</CTableHeaderCell>
+              <CTableHeaderCell>{t("station.actions")}</CTableHeaderCell>
             </CTableRow>
           </CTableHead>
           <CTableBody>

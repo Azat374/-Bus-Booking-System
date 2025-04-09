@@ -3,12 +3,12 @@ import { toast, Toaster } from "react-hot-toast";
 import "react-toastify/dist/ReactToastify.css";
 import { axiosInst } from "src/axiosInstance";
 // import AllRoutes from "./AllRoutes";
-
+import { useTranslation } from "react-i18next";
 const AddStation = () => {
   const [stationName, setStationName] = useState("");
   const [stations, setStations] = useState([]);
   const [showAlert, setShowAlert] = useState(false);
-
+  const { t } = useTranslation();
   useEffect(() => {
     fetchStations();
   }, []);
@@ -85,7 +85,7 @@ const AddStation = () => {
         <div className="col-md-6">
           <form>
             <div className="form-group">
-              <label htmlFor="InputBusNo">Station Name</label>
+              <label htmlFor="InputBusNo">{t("station.name")}</label>
               <input
                 type="text"
                 name="Station Name"
@@ -103,7 +103,7 @@ const AddStation = () => {
               onClick={stationData}
               className="btn btn-primary"
             >
-              Add Station
+              {t("station.add")}
             </button>
           </form>
         </div>

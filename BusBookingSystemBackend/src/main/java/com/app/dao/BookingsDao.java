@@ -18,6 +18,6 @@ public interface BookingsDao extends JpaRepository<Bookings, Long>{
 	@Query("SELECT b FROM Bookings b WHERE b.bus.driver.id = :driverId")
 	List<Bookings> findByDriverId(@Param("driverId") Long driverId);
 
-	@Query("SELECT COUNT(b) FROM Bookings b WHERE b.bus.id = :busId")
+	@Query("SELECT COUNT(DISTINCT b.bus) FROM Bookings b WHERE b.bus.id = :busId")
 	int countTripsByBusId(@Param("busId") Long busId);
 }

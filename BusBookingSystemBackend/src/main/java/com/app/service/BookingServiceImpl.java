@@ -274,139 +274,171 @@ public class BookingServiceImpl implements BookingService {
 	}
 
 
+    public byte[] generateFullReport() {
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+            // Создаём документ формата A4 с отступами
+            Document document = new Document(PageSize.A4, 36, 36, 36, 36);
+            PdfWriter.getInstance(document, baos);
+            document.open();
 
-	public byte[] generateFullReport() {
-		try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
-			// Создаём документ формата A4 с отступами
-			Document document = new Document(PageSize.A4, 36, 36, 36, 36);
-			PdfWriter.getInstance(document, baos);
-			document.open();
+            // Загружаем шрифт с поддержкой кириллицы
+            BaseFont bf = BaseFont.createFont("fonts/arial.ttf", BaseFont.IDENTITY_H, BaseFont.EMBEDDED);
+            Font regularFont = new Font(bf, 12, Font.NORMAL);
+            Font boldFont = new Font(bf, 20, Font.BOLD);
+            Font sectionFont = new Font(bf, 14, Font.BOLD);
 
-			// Загружаем шрифт с поддержкой кириллицы
-			BaseFont bf = BaseFont.createFont("fonts/arial.ttf", BaseFont.IDENTITY_H, BaseFont.EMBEDDED);
-			Font regularFont = new Font(bf, 12, Font.NORMAL);
-			Font boldFont = new Font(bf, 20, Font.BOLD);
-			Font sectionFont = new Font(bf, 14, Font.BOLD);
+            // Заголовок отчёта
+            Paragraph title = new Paragraph("Брондау жүйесінің есебі", boldFont);
+            title.setAlignment(Element.ALIGN_CENTER);
+            document.add(title);
+            document.add(Chunk.NEWLINE);
 
-			// Заголовок отчёта
-			Paragraph title = new Paragraph("Отчёт по системе бронирования", boldFont);
-			title.setAlignment(Element.ALIGN_CENTER);
-			document.add(title);
+            // 1. Общая информация
+            document.add(new Paragraph("1. Жалпы мәлімет", sectionFont));
+            document.add(new Paragraph("Жалпы пайдаланушылар саны: " + userDao.count(), regularFont));
+            document.add(new Paragraph("Автобустардың жалпы саны: " + busDao.count(), regularFont));
+            document.add(new Paragraph("Жалпы брондау саны: " + bookingDao.count(), regularFont));
+            document.add(Chunk.NEWLINE);
 
-			// Отделяем пустой строкой
-			document.add(Chunk.NEWLINE);
+            // 2. Водители
+            Paragraph driverSection = new Paragraph("2. Жүргізушілер және табыстар", sectionFont);
+            driverSection.setSpacingBefore(10f);
+            document.add(driverSection);
+            document.add(Chunk.NEWLINE);
 
-			// Раздел 1: Общая информация
-			document.add(new Paragraph("1. Общая информация", sectionFont));
-			document.add(new Paragraph("Всего пользователей: " + userDao.count(), regularFont));
-			document.add(new Paragraph("Всего автобусов: " + busDao.count(), regularFont));
-			document.add(new Paragraph("Всего бронирований: " + bookingDao.count(), regularFont));
-			document.add(Chunk.NEWLINE);
+            // Таблица водителей
+            PdfPTable driverTable = new PdfPTable(6);
+            driverTable.setWidthPercentage(100);
 
-			// Раздел 2: Водители
-			Paragraph driverSection = new Paragraph("2. Водители и заработок", sectionFont);
-			driverSection.setSpacingBefore(10f);
-			document.add(driverSection);
-			document.add(Chunk.NEWLINE);
+            addTableHeader(driverTable,
+                    new String[]{
+                            "Аты-жөні", "Лицензия", "Автобус", "Телефон",
+                            "Кезең ішіндегі кіріс", "Жұмыс істеген сағат"
+                    },
+                    regularFont
+            );
 
-			// Создаём таблицу для водителей
-			PdfPTable driverTable = new PdfPTable(6);
-			driverTable.setWidthPercentage(100);
+            // Данные для диаграммы водителей
+            DefaultCategoryDataset driverDataset = new DefaultCategoryDataset();
 
-			addTableHeader(driverTable,
-					new String[]{"ФИО", "Лицензия", "Автобус", "Телефон", "Доход за период", "Отработано часов"},
-					regularFont
-			);
+            driverDao.findAll().forEach(driver -> {
+                double earnings = bookingDao.findByDriverId(driver.getId())
+                        .stream().mapToDouble(Bookings::getFare).sum();
 
-			// Для диаграммы соберём данные о доходах
-			DefaultCategoryDataset dataset = new DefaultCategoryDataset();
+                long totalHours = busDao.findByDriverId(driver.getId())
+                        .stream()
+                        .mapToLong(bus -> Duration.between(bus.getStartTime(), bus.getEndTime()).toHours())
+                        .sum();
 
-			driverDao.findAll().forEach(driver -> {
-				double earnings = bookingDao.findByDriverId(driver.getId())
-						.stream().mapToDouble(Bookings::getFare).sum();
-				long totalHours = busDao.findByDriverId(driver.getId())
-						.stream().mapToLong(bus -> Duration.between(bus.getStartTime(), bus.getEndTime()).toHours())
-						.sum();
+                String fio = driver.getFirstName() + " " + driver.getLastName();
 
-				String fio = driver.getFirstName() + " " + driver.getLastName();
-				// Заполняем строку таблицы
-				addTableRow(driverTable, new String[]{
-						fio,
-						driver.getLicenseNumber(),
-						(driver.getBuses() != null && !driver.getBuses().isEmpty())
-								? driver.getBuses().stream().map(Bus::getBusNo).collect(Collectors.joining(", "))
-								: "Без автобуса",
-						driver.getPhoneNumber(),
-						String.format("%.2f", earnings),
-						String.valueOf(totalHours)
-				}, regularFont);
+                // Заполняем строку таблицы
+                addTableRow(driverTable, new String[]{
+                        fio,
+                        driver.getLicenseNumber(),
+                        (driver.getBuses() != null && !driver.getBuses().isEmpty())
+                                ? driver.getBuses().stream().map(Bus::getBusNo).collect(Collectors.joining(", "))
+                                : "Автобуссыз",
+                        driver.getPhoneNumber(),
+                        String.format("%.2f", earnings),
+                        String.valueOf(totalHours)
+                }, regularFont);
 
-				// Заполняем данные для диаграммы
-				// (например, берем имя водителя как метку и его earnings как значение)
-				dataset.addValue(earnings, "Доход (валюта)", fio);
-			});
+                // Добавляем данные в dataset для диаграммы
+                driverDataset.addValue(earnings, "Кіріс (валюта)", fio);
+            });
 
-			document.add(driverTable);
-			document.add(Chunk.NEWLINE);
+            document.add(driverTable);
+            document.add(Chunk.NEWLINE);
 
-			// Создаём диаграмму (вертикальная гистограмма)
-			JFreeChart barChart = ChartFactory.createBarChart(
-					"Заработок водителей",
-					"Водитель",
-					"Доход",
-					dataset,
-					PlotOrientation.VERTICAL,
-					false, // легенда
-					true,
-					false
-			);
-			// Преобразуем диаграмму в PNG и добавляем в PDF
-			ByteArrayOutputStream chartBaos = new ByteArrayOutputStream();
-			// Параметры (width, height) подбирайте в зависимости от желаемого размера
-			java.awt.image.BufferedImage chartImage = barChart.createBufferedImage(600, 400);
-			byte[] chartBytes = EncoderUtil.encode(chartImage, ImageFormat.PNG, true);
-			chartBaos.write(chartBytes);
+            // Диаграмма по водителям (гистограмма)
+            JFreeChart driverBarChart = ChartFactory.createBarChart(
+                    "Жүргізушілердің табысы",
+                    "Жүргізуші",
+                    "Табыс",
+                    driverDataset,
+                    PlotOrientation.VERTICAL,
+                    false,
+                    true,
+                    false
+            );
 
-			Image chartImg = Image.getInstance(chartBaos.toByteArray());
-			chartImg.setAlignment(Element.ALIGN_CENTER);
-			chartImg.scaleToFit(500, 300); // масштабируем под страницу
-			document.add(chartImg);
+            ByteArrayOutputStream driverChartBaos = new ByteArrayOutputStream();
+            java.awt.image.BufferedImage driverChartImage = driverBarChart.createBufferedImage(600, 400);
+            byte[] driverChartBytes = EncoderUtil.encode(driverChartImage, ImageFormat.PNG, true);
+            driverChartBaos.write(driverChartBytes);
 
-			// Раздел 3: Автобусы
-			Paragraph busSection = new Paragraph("3. Автобусы и километраж", sectionFont);
-			busSection.setSpacingBefore(20f);
-			document.add(busSection);
-			document.add(Chunk.NEWLINE);
+            Image driverChartImg = Image.getInstance(driverChartBaos.toByteArray());
+            driverChartImg.setAlignment(Element.ALIGN_CENTER);
+            driverChartImg.scaleToFit(500, 300);
+            document.add(driverChartImg);
 
-			PdfPTable busTable = new PdfPTable(3);
-			busTable.setWidthPercentage(100);
+            // 3. Автобусы
+            Paragraph busSection = new Paragraph("3. Автобустар және километраж", sectionFont);
+            busSection.setSpacingBefore(20f);
+            document.add(busSection);
+            document.add(Chunk.NEWLINE);
 
-			addTableHeader(busTable,
-					new String[]{"Номер автобуса", "Маршрут", "Общий километраж"},
-					regularFont
-			);
+            PdfPTable busTable = new PdfPTable(3);
+            busTable.setWidthPercentage(100);
 
-			busDao.findAll().forEach(bus -> {
-				int trips = bookingDao.countTripsByBusId(bus.getId());
-				double distance = bus.getRoute().getDistance();
-				addTableRow(busTable, new String[]{
-						bus.getBusNo(),
-						bus.getRoute().getStationIdBoarding().getStationName() + " - " +
-								bus.getRoute().getStationIdDestination().getStationName(),
-						String.format("%.2f", trips * distance)
-				}, regularFont);
-			});
+            addTableHeader(busTable,
+                    new String[]{"Автобус нөмірі", "Маршрут", "Жалпы километр"},
+                    regularFont
+            );
 
-			document.add(busTable);
+            // Создадим dataset для диаграммы автобусов
+            DefaultCategoryDataset busDataset = new DefaultCategoryDataset();
 
-			// Закрываем документ
-			document.close();
-			return baos.toByteArray();
+            busDao.findAll().forEach(bus -> {
+                int trips = bookingDao.countTripsByBusId(bus.getId());
+                double distance = bus.getRoute().getDistance();
+                double totalDistance = trips * distance;
 
-		} catch (Exception e) {
-			throw new RuntimeException("Failed to generate report: " + e.getMessage(), e);
-		}
-	}
+                // Запись в таблицу
+                addTableRow(busTable, new String[]{
+                        bus.getBusNo(),
+                        bus.getRoute().getStationIdBoarding().getStationName() + " - " +
+                                bus.getRoute().getStationIdDestination().getStationName(),
+                        String.format("%.2f", totalDistance)
+                }, regularFont);
+
+                // Добавляем данные в dataset для построения диаграммы
+                busDataset.addValue(totalDistance, "Километр", bus.getBusNo());
+            });
+
+            document.add(busTable);
+            document.add(Chunk.NEWLINE);
+
+            // Создадим диаграмму для автобусов (например, тоже гистограмма)
+            JFreeChart busBarChart = ChartFactory.createBarChart(
+                    "Автобустардың жалпы километрі",
+                    "Автобус нөмірі",
+                    "Километр",
+                    busDataset,
+                    PlotOrientation.VERTICAL,
+                    false, // легенда
+                    true,  // tooltips
+                    false  // urls
+            );
+
+            ByteArrayOutputStream busChartBaos = new ByteArrayOutputStream();
+            java.awt.image.BufferedImage busChartImage = busBarChart.createBufferedImage(600, 400);
+            byte[] busChartBytes = EncoderUtil.encode(busChartImage, ImageFormat.PNG, true);
+            busChartBaos.write(busChartBytes);
+
+            Image busChartImg = Image.getInstance(busChartBaos.toByteArray());
+            busChartImg.setAlignment(Element.ALIGN_CENTER);
+            busChartImg.scaleToFit(500, 300);
+            document.add(busChartImg);
+
+            document.close();
+            return baos.toByteArray();
+
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to generate report: " + e.getMessage(), e);
+        }
+    }
 
 	/**
 	 * Метод для добавления заголовков в таблицу

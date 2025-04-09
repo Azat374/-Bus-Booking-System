@@ -4,12 +4,12 @@ import { axiosInst } from "src/axiosInstance";
 import { toast } from "react-hot-toast";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faTrash } from "@fortawesome/free-solid-svg-icons";
-
+import { useTranslation } from "react-i18next";
 const Schedules = () => {
   const [buses, setBuses] = useState([]);
   const [busId, setBusId] = useState("");
   const [schedules, setSchedules] = useState([]);
-
+  const { t } = useTranslation();
   useEffect(() => {
     fetchAllBuses();
   }, []);
@@ -61,10 +61,10 @@ const Schedules = () => {
 
   return (
     <div>
-      <h3>Bus Schedules</h3>
+      <h3>{t("schedule.viewTitle")}</h3>
 
       <Form.Group className="mb-2" style={{ maxWidth: "300px" }}>
-  <Form.Label>Select Bus:</Form.Label>
+  <Form.Label>{t("")}:</Form.Label>
   <Form.Select value={busId} onChange={(e) => setBusId(e.target.value)}>
     <option value="">-- Select Bus --</option>
     {[...new Map(buses.map(bus => [bus.busNo, bus])).values()].map((bus) => (

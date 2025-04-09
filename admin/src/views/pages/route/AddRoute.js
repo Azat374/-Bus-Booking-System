@@ -4,7 +4,7 @@ import { toast,Toaster } from "react-hot-toast";
 import "react-toastify/dist/ReactToastify.css";
 import { axiosInst } from "src/axiosInstance";
 import '@coreui/coreui/dist/css/coreui.min.css';
-
+import { useTranslation } from "react-i18next";
 
 const AddRoute = () => {
     const navigate = useNavigate();
@@ -15,7 +15,7 @@ const AddRoute = () => {
         stationIdTo: "",
         distance: 0,
     });
-
+    const { t } = useTranslation();
     useEffect(() => {
         fetchStationList();
     }, []);
@@ -91,7 +91,7 @@ const AddRoute = () => {
     }}
     >
         <div className="form-group">
-            <label htmlFor="exampleInputFrom">From</label>
+            <label htmlFor="exampleInputFrom">{t("route.from")}</label>
             <select
                 className="form-select"
                 aria-label="Default select example"
@@ -99,7 +99,7 @@ const AddRoute = () => {
                 onChange={handleChanges}
                 value={routeData.stationIdFrom}
             >
-                <option value="">Select</option>
+                <option value="">{t("select")}</option>
                 {stationList.map((station) => (
                     <option key={station.id} value={station.id}>
                         {station.station_name}
@@ -109,7 +109,7 @@ const AddRoute = () => {
          </div>
 
         <div className="form-group">
-            <label htmlFor="exampleInputTo">To</label>
+            <label htmlFor="exampleInputTo">{t("route.to")}</label>
             <select
                 className="form-select"
                 aria-label="Default select example"
@@ -127,7 +127,7 @@ const AddRoute = () => {
         </div>
 
         <div className="form-group">
-            <label htmlFor="exampleInputDistance">Distance</label>
+            <label htmlFor="exampleInputDistance">{t("route.distance")}</label>
             <input
                 type="text"
                 className="form-control"
@@ -144,7 +144,7 @@ const AddRoute = () => {
             onClick={addRouteAction}
             className="btn btn-primary"
         >
-            Add Route
+            {t("route.add")}
         </button>
     </form>
 </div>

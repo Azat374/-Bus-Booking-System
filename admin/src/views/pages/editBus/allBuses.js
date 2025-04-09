@@ -14,7 +14,7 @@ import {
   faEye,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-
+import { useTranslation } from "react-i18next";
 const ShowBuses = () => {
   const [buses, setBuses] = useState([]);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -28,7 +28,7 @@ const ShowBuses = () => {
   const [passengerList, setPassengerList] = useState({});
   const [showPassengerModal, setShowPassengerModal] = useState(false);
   const [drivers, setDrivers] = useState([]);
-
+  const { t } = useTranslation();
   useEffect(() => {
     fetchBuses();
     fetchDrivers();
@@ -322,18 +322,18 @@ const ShowBuses = () => {
 
   return (
     <>
-      <h2>All Buses</h2>
+      <h2>{t("buses.title")}</h2>
       <Table striped bordered hover>
           <thead>
             <tr>
-              <th>Bus No</th>
-              <th>From</th>
-              <th>To</th>
-              <th>Price</th>
-              <th>Duration</th>
-              <th>Class</th>
-              <th>Driver</th> {/* Новая колонка для водителя */}
-              <th>Actions</th>
+              <th>{t("buses.no")}</th>
+              <th>{t("buses.from")}</th>
+              <th>{t("buses.to")}</th>
+              <th>{t("buses.price")}</th>
+              <th>{t("buses.duration")}</th>
+              <th>{t("buses.class")}</th>
+              <th>{t("buses.driver")}</th> {/* Новая колонка для водителя */}
+              <th>{t("actions")}</th>
             </tr>
           </thead>
           <tbody>
@@ -380,31 +380,31 @@ const ShowBuses = () => {
       <Modal show={showPassengerModal} onHide={handleClosePassengerModal}>
         <Modal.Header closeButton>
           <p>
-            <Modal.Title>Bus Details</Modal.Title>
+            <Modal.Title>{t("buses.busDetails")}</Modal.Title>
           </p>
         </Modal.Header>
         <Modal.Body>
           <div id="modal-content">
             <p>
-              <Modal.Title>Passenger List</Modal.Title>
+              <Modal.Title>{t("buses.passengerList")}:</Modal.Title>
             </p>
-            <p>Bus No: {passengerList.busNo}</p>
-            <p>From: {passengerList.from}</p>
+            <p>{t("buses.no")}: {passengerList.busNo}</p>
+            <p>{t("buses.from")}: {passengerList.from}</p>
             <p>
-              Start Time: {new Date(passengerList.startTime).toLocaleString()}
+              {t("startTime")}: {new Date(passengerList.startTime).toLocaleString()}
             </p>
-            <p>To: {passengerList.to}</p>
-            <p>End Time: {new Date(passengerList.endTime).toLocaleString()}</p>
-            <p>Total Seats: {passengerList.totalSeats}</p>
+            <p>{t("buses.to")}: {passengerList.to}</p>
+            <p>{t("endTime")}: {new Date(passengerList.endTime).toLocaleString()}</p>
+            <p>{t("buses.totalSeats")}: {passengerList.totalSeats}</p>
           </div>
           <Table striped bordered hover>
             <thead>
               <tr>
-                <th>Seat No</th>
-                <th>First Name</th>
-                <th>Last Name</th>
-                <th>Gender</th>
-                <th>Age</th>
+                <th>{t("buses.seatNo")}</th>
+                <th>{t("firstName")}</th>
+                <th>{t("lastName")}</th>
+                <th>{t("gender")}</th>
+                <th>{t("age")}</th>
               </tr>
             </thead>
             <tbody>
@@ -478,14 +478,14 @@ const ShowBuses = () => {
       {/* Edit Bus Modal */}
       <Modal show={showEditModal} onHide={handleCloseEditModal}>
         <Modal.Header closeButton>
-          <Modal.Title>Edit Bus</Modal.Title>
+          <Modal.Title>{t("buses.edit")}</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <Form.Group controlId="formBusNo">
-            <Form.Label>Bus Number</Form.Label>
+            <Form.Label>{t("buses.busNo")}</Form.Label>
             <Form.Control
               type="text"
-              placeholder="Enter bus number"
+              placeholder={t("buses.enterBusNo")}
               name="busNo"
               value={editedBusDetails.busNo}
               onChange={handleChange}
@@ -493,7 +493,7 @@ const ShowBuses = () => {
           </Form.Group>
           <Form>
             <Form.Group controlId="formFrom">
-              <Form.Label>From</Form.Label>
+              <Form.Label>{t("buses.from")}</Form.Label>
               <Form.Control
                 type="text"
                 placeholder="Enter origin"
@@ -505,7 +505,7 @@ const ShowBuses = () => {
             </Form.Group>
 
             <Form.Group controlId="formTo">
-              <Form.Label>To</Form.Label>
+              <Form.Label>{t("buses.to")}</Form.Label>
               <Form.Control
                 type="text"
                 placeholder="Enter destination"
@@ -517,7 +517,7 @@ const ShowBuses = () => {
             </Form.Group>
 
             <Form.Group controlId="formCost">
-              <Form.Label>Cost</Form.Label>
+              <Form.Label>{t("buses.price")}</Form.Label>
               <Form.Control
                 type="number"
                 placeholder="Enter cost"
@@ -529,7 +529,7 @@ const ShowBuses = () => {
             </Form.Group>
 
             <Form.Group controlId="formDuration">
-              <Form.Label>Duration</Form.Label>
+              <Form.Label>{t("buses.duration")}</Form.Label>
               <Form.Control
                 type="text"
                 placeholder="Enter duration"
@@ -540,7 +540,7 @@ const ShowBuses = () => {
               />
             </Form.Group>
             <Form.Group>
-              <Form.Label>Select Driver</Form.Label>
+              <Form.Label>{t("buses.selectDriver")}:</Form.Label>
               <Form.Control
                 as="select"
                 value={editedBusDetails.driverId}
@@ -560,10 +560,10 @@ const ShowBuses = () => {
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={handleCloseEditModal}>
-            Close
+            {t("buttons.close")}
           </Button>
           <Button variant="primary" onClick={handleSaveEdit}>
-            Save Changes
+            {t("buttons.save")}
           </Button>
         </Modal.Footer>
       </Modal>

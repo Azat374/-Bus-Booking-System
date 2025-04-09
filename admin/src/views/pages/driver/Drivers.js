@@ -5,12 +5,13 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faTrash, faEdit, faPlus } from "@fortawesome/free-solid-svg-icons";
 import { axiosInst } from "src/axiosInstance";
 import { toast } from "react-hot-toast";
+import { useTranslation } from "react-i18next";
 
 const Drivers = () => {
   const [drivers, setDrivers] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [editedDriver, setEditedDriver] = useState(null);
-
+  const { t } = useTranslation();
   // Новое поле salary включено в стейт:
   const [driverDetails, setDriverDetails] = useState({
     id: "",
@@ -103,18 +104,18 @@ const Drivers = () => {
     <div>
       <h2>Drivers</h2>
       <Button variant="primary" onClick={handleAddDriver}>
-        <FontAwesomeIcon icon={faPlus} /> Add Driver
+        <FontAwesomeIcon icon={faPlus} /> {t("drivers.add")}
       </Button>
 
       <Table striped bordered hover className="mt-3">
         <thead>
           <tr>
-            <th>First Name</th>
-            <th>Last Name</th>
-            <th>License Number</th>
-            <th>Phone Number</th>
-            <th>Salary</th> {/* Новая колонка */}
-            <th>Actions</th>
+            <th>{t("firstName")}</th>
+            <th>{t("lastName")}</th>
+            <th>{t("drivers.license")}</th>
+            <th>{t("phoneNumber")}</th>
+            <th>{t("drivers.salary")}</th> {/* Новая колонка */}
+            <th>{t("actions")}</th>
           </tr>
         </thead>
         <tbody>
@@ -153,7 +154,7 @@ const Drivers = () => {
           <Form>
             {/* First Name */}
             <Form.Group className="mb-2">
-              <Form.Label>First Name</Form.Label>
+              <Form.Label>{t("firstName")}</Form.Label>
               <Form.Control
                 type="text"
                 value={driverDetails.firstName}
@@ -165,7 +166,7 @@ const Drivers = () => {
 
             {/* Last Name */}
             <Form.Group className="mb-2">
-              <Form.Label>Last Name</Form.Label>
+              <Form.Label>{t("lastName")}</Form.Label>
               <Form.Control
                 type="text"
                 value={driverDetails.lastName}
@@ -177,7 +178,7 @@ const Drivers = () => {
 
             {/* License Number */}
             <Form.Group className="mb-2">
-              <Form.Label>License Number</Form.Label>
+              <Form.Label>{t("drivers.license")}</Form.Label>
               <Form.Control
                 type="text"
                 value={driverDetails.licenseNumber}
@@ -189,7 +190,7 @@ const Drivers = () => {
 
             {/* Phone Number */}
             <Form.Group className="mb-2">
-              <Form.Label>Phone Number</Form.Label>
+              <Form.Label>{t("phoneNumber")}</Form.Label>
               <Form.Control
                 type="text"
                 value={driverDetails.phoneNumber}
@@ -201,7 +202,7 @@ const Drivers = () => {
 
             {/* Salary */}
             <Form.Group className="mb-2">
-              <Form.Label>Salary</Form.Label>
+              <Form.Label>{t("drivers.salary")}</Form.Label>
               <Form.Control
                 type="number"
                 value={driverDetails.salary}
@@ -215,10 +216,10 @@ const Drivers = () => {
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={() => setShowModal(false)}>
-            Close
+            {t("buttons.close")}
           </Button>
           <Button variant="primary" onClick={handleSaveDriver}>
-            Save
+            {t("buttons.save")}
           </Button>
         </Modal.Footer>
       </Modal>

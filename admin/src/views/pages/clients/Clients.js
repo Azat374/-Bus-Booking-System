@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react'
 import { CCard, CCardBody, CCardHeader, CTable, CTableBody, CTableHead, CTableHeaderCell, CTableRow, CTableDataCell } from '@coreui/react'
 import { axiosInst } from 'src/axiosInstance'
+import { useTranslation } from "react-i18next";
 
 const Clients = () => {
   const [clients, setClients] = useState([])
-
+  const { t } = useTranslation()
   useEffect(() => {
     fetchClients()
   }, [])
@@ -26,12 +27,12 @@ const Clients = () => {
           <CTableHead>
             <CTableRow>
               <CTableHeaderCell>#</CTableHeaderCell>
-              <CTableHeaderCell>First Name</CTableHeaderCell>
-              <CTableHeaderCell>Last Name</CTableHeaderCell>
-              <CTableHeaderCell>Email</CTableHeaderCell>
-              <CTableHeaderCell>Mobile</CTableHeaderCell>
-              <CTableHeaderCell>Age</CTableHeaderCell>
-              <CTableHeaderCell>Gender</CTableHeaderCell>
+              <CTableHeaderCell>{t("firstName")}</CTableHeaderCell>
+              <CTableHeaderCell>{t("lastName")}</CTableHeaderCell>
+              <CTableHeaderCell>{t("email")}</CTableHeaderCell>
+              <CTableHeaderCell>{t("clients.mobile")}</CTableHeaderCell>
+              <CTableHeaderCell>{t("age")}</CTableHeaderCell>
+              <CTableHeaderCell>{t("gender")}</CTableHeaderCell>
             </CTableRow>
           </CTableHead>
           <CTableBody>

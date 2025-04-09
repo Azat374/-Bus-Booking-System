@@ -85,7 +85,7 @@ const Search = () => {
     setClass(e.target.value);
   };
   // Поиск автобусов
-  const search = () => {
+  const   search = () => {
     if (!selectedFromStation || !selectedToStation || !selectedDate) {
       toast.warning("Please select From, To, and Date");
       return;
@@ -183,10 +183,9 @@ const Search = () => {
               className="w-full appearance-none bg-neutral-200/60 px-3 h-12 border border-neutral-900 rounded-md focus:outline-none focus:bg-neutral-100"
             />
           </div>
-
-          {/* TIME (опционально) */}
+          {/*
           <div>
-            <label htmlFor="time" className="block mb-2 font-semibold">
+            <label htmlFor="class" className="block mb-2 font-semibold">
               {t("search.class")}
             </label>
             <select
@@ -203,15 +202,7 @@ const Search = () => {
                 </option>
               ))}
             </select>
-            {/*<input
-              type="time"
-              name="time"
-              id="time"
-              value={selectedTime}
-              onChange={handleTimeChange}
-              className="w-full appearance-none bg-neutral-200/60 px-3 h-12 border border-neutral-900 rounded-md focus:outline-none focus:bg-neutral-100"
-            />*/}
-          </div>
+          </div>*/}
 
           {/* Кнопка поиска */}
           <div>
@@ -245,6 +236,9 @@ const Search = () => {
                   {/* Если нужно время */}
                   <p className="text-sm text-gray-500">
                     {bus.startTime} — {bus.endTime}
+                  </p>
+                  <p className="text-sm mt-2">
+                    {t("search.class")}: {bus.busClass}
                   </p>
                   {/* Стоимость и кол-во мест */}
                   <p className="text-sm mt-2">
