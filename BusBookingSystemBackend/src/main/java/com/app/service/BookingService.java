@@ -1,5 +1,6 @@
 package com.app.service;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import com.app.dto.ApiResponse;
@@ -16,5 +17,5 @@ public interface BookingService {
 	 ApiResponse cancelBookings(long bookingid);
 	List<GetBookings> getAllBookings();
 
-	byte[] generateFullReport();
+	byte[] generateFullReport(LocalDate from, LocalDate to);
 }

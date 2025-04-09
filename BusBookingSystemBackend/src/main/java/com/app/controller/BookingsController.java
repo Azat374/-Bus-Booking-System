@@ -1,5 +1,6 @@
 package com.app.controller;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import java.util.List;
@@ -7,20 +8,15 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import com.app.dto.ApiResponse;
 import com.app.dto.BookingDetailsDto;
 import com.app.dto.BookingsDto;
 import com.app.dto.GetBookings;
 import com.app.service.BookingService;
-
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.web.bind.annotation.RequestParam;
 @RestController
 @RequestMapping("/bookings")
 
@@ -95,8 +91,11 @@ public class BookingsController {
 
     @GetMapping("/report/general")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<byte[]> generateFullReport() {
-        byte[] report = bookingService.generateFullReport();
+    public ResponseEntity<byte[]> generateFullReport(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate) {
+
+        byte[] report = bookingService.generateFullReport(fromDate, toDate);
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_PDF);
